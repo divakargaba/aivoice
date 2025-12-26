@@ -1,24 +1,105 @@
-import { getProject } from "@/actions/projects";
+"use client";
+
+import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { notFound } from "next/navigation";
+import { RunAnalysisButton } from "@/components/run-analysis-button";
+import { CastTab } from "@/components/cast-tab";
+import { StudioTab } from "@/components/studio-tab";
 import { Sparkles, Users, Mic } from "lucide-react";
 
-export default async function ProjectPage({
-    params,
-}: {
-    params: Promise<{ id: string }>;
-}) {
-    const { id } = await params;
+interface VoiceAssignment {
+    id: string;
+    provider: string;
+    voiceId: string;
+    settings: any;
+}
 
-    let project;
-    try {
-        project = await getProject(id);
-    } catch (error) {
-        notFound();
-    }
+interface Character {
+    id: string;
+    name: string;
+    description: string | null;
+    voiceAssignments: VoiceAssignment[];
+}
+
+interface TextBlock {
+    id: string;
+    idx: number;
+    kind: "narration" | "dialogue";
+    text: string;
+    meta: {
+        emotion?: string;
+        director_notes?: string;
+    } | null;
+    speakerCharacter: {
+        name: string;
+    } | null;
+    audioSegment: {
+        id: string;
+        audioUrl: string;
+    } | null;
+}
+
+interface Chapter {
+    id: string;
+    title: string;
+    rawText: string | null;
+    textBlocks: TextBlock[];
+}
+
+interface Project {
+    id: string;
+    title: string;
+    status: string;
+    chapters: Chapter[];
+    characters: Character[];
+}
+
+interface ProjectPageProps {
+    params: Promise<{ id: string }>;
+}
+
+export default function ProjectPage({ params }: ProjectPageProps) {
+    const [activeTab, setActiveTab] = useState("manuscript");
+    const [project, setProject] = useState<Project | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const loadProject = async () => {
+            const { id } = await params;
+            const response = await fetch(`/api/projects/${id}`);
+            if (response.ok) {
+                const data = await response.json();
+                setProject(data);
+            }
+            setLoading(false);
+        };
+        loadProject();
+    }, [params]);
+
+    // Poll for status updates while analyzing
+    useEffect(() => {
+        if (project?.status === "analyzing") {
+            const interval = setInterval(async () => {
+                const { id } = await params;
+                const response = await fetch(`/api/projects/${id}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    setProject(data);
+                    if (data.status !== "analyzing") {
+                        clearInterval(interval);
+                    }
+                }
+            }, 2000); // Poll every 2 seconds
+
+            return () => clearInterval(interval);
+        }
+    }, [project?.status, params]);
+
+    const handleAnalysisComplete = () => {
+        setActiveTab("cast");
+    };
 
     // Get status badge color
     const getStatusVariant = (status: string) => {
@@ -38,6 +119,22 @@ export default async function ProjectPage({
         }
     };
 
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-[400px]">
+                <p className="text-muted-foreground">Loading project...</p>
+            </div>
+        );
+    }
+
+    if (!project) {
+        return (
+            <div className="flex items-center justify-center min-h-[400px]">
+                <p className="text-muted-foreground">Project not found</p>
+            </div>
+        );
+    }
+
     return (
         <div className="space-y-6">
             {/* Project Header */}
@@ -56,7 +153,7 @@ export default async function ProjectPage({
             </div>
 
             {/* Tabs */}
-            <Tabs defaultValue="manuscript" className="space-y-4">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
                 <TabsList>
                     <TabsTrigger value="manuscript">
                         <Sparkles className="mr-2 h-4 w-4" />
@@ -76,10 +173,14 @@ export default async function ProjectPage({
                 <TabsContent value="manuscript" className="space-y-4">
                     <div className="flex items-center justify-between">
                         <h2 className="text-xl font-semibold">Manuscript Content</h2>
-                        <Button disabled={project.status !== "draft"}>
-                            <Sparkles className="mr-2 h-4 w-4" />
-                            Run Analysis
-                        </Button>
+                        {project.chapters[0] && (
+                            <RunAnalysisButton
+                                projectId={project.id}
+                                chapterId={project.chapters[0].id}
+                                disabled={project.status !== "draft"}
+                                onComplete={handleAnalysisComplete}
+                            />
+                        )}
                     </div>
 
                     {project.chapters.length === 0 ? (
@@ -114,65 +215,16 @@ export default async function ProjectPage({
 
                 {/* Cast Tab */}
                 <TabsContent value="cast" className="space-y-4">
-                    <div className="flex items-center justify-between">
-                        <h2 className="text-xl font-semibold">Characters & Voice Cast</h2>
-                        <Button variant="outline" disabled>
-                            Add Character
-                        </Button>
-                    </div>
-
-                    {project.characters.length === 0 ? (
-                        <Card>
-                            <CardContent className="py-16 text-center">
-                                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted mx-auto">
-                                    <Users className="h-10 w-10 text-muted-foreground" />
-                                </div>
-                                <h3 className="mt-6 text-lg font-semibold">No characters yet</h3>
-                                <p className="mt-2 text-sm text-muted-foreground max-w-sm mx-auto">
-                                    Run analysis on your manuscript to automatically detect characters
-                                    and dialogue.
-                                </p>
-                            </CardContent>
-                        </Card>
-                    ) : (
-                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                            {project.characters.map((character) => (
-                                <Card key={character.id}>
-                                    <CardContent className="p-4">
-                                        <h3 className="font-semibold">{character.name}</h3>
-                                        {character.description && (
-                                            <p className="text-sm text-muted-foreground mt-1">
-                                                {character.description}
-                                            </p>
-                                        )}
-                                    </CardContent>
-                                </Card>
-                            ))}
-                        </div>
-                    )}
+                    <CastTab projectId={project.id} characters={project.characters} />
                 </TabsContent>
 
                 {/* Studio Tab */}
                 <TabsContent value="studio" className="space-y-4">
-                    <div className="flex items-center justify-between">
-                        <h2 className="text-xl font-semibold">Audio Studio</h2>
-                        <Button variant="outline" disabled>
-                            Generate Audio
-                        </Button>
-                    </div>
-
-                    <Card>
-                        <CardContent className="py-16 text-center">
-                            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted mx-auto">
-                                <Mic className="h-10 w-10 text-muted-foreground" />
-                            </div>
-                            <h3 className="mt-6 text-lg font-semibold">Studio coming soon</h3>
-                            <p className="mt-2 text-sm text-muted-foreground max-w-sm mx-auto">
-                                The audio generation studio will be available here. Assign voices,
-                                generate audio, and manage your final output.
-                            </p>
-                        </CardContent>
-                    </Card>
+                    <StudioTab
+                        projectId={project.id}
+                        chapters={project.chapters}
+                        projectStatus={project.status}
+                    />
                 </TabsContent>
             </Tabs>
         </div>

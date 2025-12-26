@@ -37,6 +37,7 @@ export const projects = pgTable("projects", {
         .references(() => users.id, { onDelete: "cascade" }),
     title: text("title").notNull(),
     status: projectStatusEnum("status").notNull().default("draft"),
+    generationProgress: jsonb("generation_progress"), // { chapterId, current, total }
     createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

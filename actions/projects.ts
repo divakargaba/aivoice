@@ -74,8 +74,17 @@ export async function getProject(projectId: string) {
         with: {
             chapters: {
                 orderBy: (chapters, { asc }) => [asc(chapters.idx)],
+                with: {
+                    textBlocks: {
+                        orderBy: (textBlocks, { asc }) => [asc(textBlocks.idx)],
+                        with: {
+                            audioSegment: true,
+                        },
+                    },
+                },
             },
             characters: {
+                orderBy: (characters, { asc }) => [asc(characters.name)],
                 with: {
                     voiceAssignments: true,
                 },
@@ -87,7 +96,26 @@ export async function getProject(projectId: string) {
         throw new Error("Project not found or access denied");
     }
 
-    return project;
+    // Transform the data to flatten audio segments at chapter level
+    const transformedProject = {
+        ...project,
+        chapters: project.chapters.map((chapter) => ({
+            ...chapter,
+            audioSegments: chapter.textBlocks
+                .filter((block) => block.audioSegment)
+                .map((block) => ({
+                    id: block.audioSegment!.id,
+                    audioUrl: block.audioSegment!.audioUrl,
+                    textBlockIdx: block.idx,
+                    createdAt: block.audioSegment!.createdAt,
+                })),
+        })),
+    };
+
+    console.log("getProject - Status:", transformedProject.status);
+    console.log("getProject - Progress:", transformedProject.generationProgress);
+
+    return transformedProject;
 }
 
 export async function updateProjectStatus(

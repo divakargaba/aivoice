@@ -29,9 +29,38 @@ NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/dashboard
 
 # Supabase Database
 DATABASE_URL=postgresql://postgres:[YOUR-PASSWORD]@db.[YOUR-PROJECT-REF].supabase.co:5432/postgres
+
+# Supabase Storage
+NEXT_PUBLIC_SUPABASE_URL=https://[YOUR-PROJECT-REF].supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
+
+# OpenAI API
+OPENAI_API_KEY=sk-proj-your_openai_api_key_here
+
+# ElevenLabs TTS
+ELEVENLABS_API_KEY=your_elevenlabs_api_key_here
 ```
 
 Replace the placeholder values with your actual keys.
+
+### Get API Keys
+
+**OpenAI:**
+1. Go to [https://platform.openai.com/api-keys](https://platform.openai.com/api-keys)
+2. Click "Create new secret key"
+3. Copy the key and add it to `.env.local`
+
+**ElevenLabs:**
+1. Go to [https://elevenlabs.io](https://elevenlabs.io) and sign up
+2. Go to Profile → API Keys
+3. Copy your API key
+4. Add to `.env.local`
+
+**Supabase Storage:**
+1. Go to your Supabase project settings
+2. API section → Project URL (NEXT_PUBLIC_SUPABASE_URL)
+3. API section → service_role key (SUPABASE_SERVICE_ROLE_KEY)
+4. The storage bucket will be created automatically
 
 See `DATABASE_SETUP.md` for detailed database setup instructions.
 
