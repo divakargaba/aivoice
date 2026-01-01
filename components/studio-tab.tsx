@@ -38,13 +38,13 @@ interface Chapter {
 
 interface StudioTabProps {
     projectId: string;
-    chapters: Chapter[];
+    chapter: Chapter | null;
     projectStatus: string;
 }
 
 export function StudioTab({
     projectId,
-    chapters,
+    chapter,
     projectStatus,
 }: StudioTabProps) {
     const router = useRouter();
@@ -60,7 +60,7 @@ export function StudioTab({
     const [isGeneratingAll, setIsGeneratingAll] = useState(false);
     const audioRef = useRef<HTMLAudioElement | null>(null);
 
-    const allBlocks = chapters.flatMap((ch) => ch.textBlocks);
+    const allBlocks = chapter?.textBlocks || [];
     const blocksWithAudio = allBlocks.filter(block => block.audioSegment);
     const hasNoAudio = blocksWithAudio.length === 0;
     const hasSomeAudio = blocksWithAudio.length > 0 && blocksWithAudio.length < allBlocks.length;
@@ -71,6 +71,13 @@ export function StudioTab({
             setDirectorNotes(selectedBlock.meta?.director_notes || "");
         }
     }, [selectedBlock]);
+
+    useEffect(() => {
+        setSelectedBlock(null);
+        setDirectorNotes("");
+        setCurrentPlayingBlockId(null);
+        setIsPlaying(false);
+    }, [chapter?.id]);
 
     // Handle sequential playback
     const playNextBlock = () => {
@@ -114,7 +121,7 @@ export function StudioTab({
             return;
         }
 
-        const chapterId = chapters[0]?.id;
+        const chapterId = chapter?.id;
         if (!chapterId) return;
 
         try {
@@ -125,7 +132,8 @@ export function StudioTab({
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `chapter-${chapters[0].title.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.zip`;
+            const chapterTitle = chapter?.title || "chapter";
+            a.download = `chapter-${chapterTitle.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.zip`;
             document.body.appendChild(a);
             a.click();
             window.URL.revokeObjectURL(url);
@@ -138,10 +146,10 @@ export function StudioTab({
     };
 
     const handleGenerateAllAudio = () => {
-        if (chapters.length === 0) return;
+        if (!chapter) return;
 
-        const chapterId = chapters[0].id;
-        const chapterTitle = chapters[0].title;
+        const chapterId = chapter.id;
+        const chapterTitle = chapter.title;
 
         setIsGeneratingAll(true);
 
@@ -212,7 +220,39 @@ export function StudioTab({
         });
     };
 
-    if (chapters.length === 0 || allBlocks.length === 0) {
+    if (!chapter) {
+        return (
+            <Card>
+                <CardContent className="py-16 text-center">
+                    <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted mx-auto">
+                        <AlertCircle className="h-10 w-10 text-muted-foreground" />
+                    </div>
+                    <h3 className="mt-6 text-lg font-semibold">No chapter selected</h3>
+                    <p className="mt-2 text-sm text-muted-foreground max-w-sm mx-auto">
+                        Select a chapter to start generating audio.
+                    </p>
+                </CardContent>
+            </Card>
+        );
+    }
+
+    if (projectStatus === "analyzing") {
+        return (
+            <Card>
+                <CardContent className="py-16 text-center">
+                    <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted mx-auto">
+                        <AlertCircle className="h-10 w-10 text-muted-foreground" />
+                    </div>
+                    <h3 className="mt-6 text-lg font-semibold">Analysis in progress</h3>
+                    <p className="mt-2 text-sm text-muted-foreground max-w-sm mx-auto">
+                        Your chapter is being analyzed. This usually takes a minute or two.
+                    </p>
+                </CardContent>
+            </Card>
+        );
+    }
+
+    if (allBlocks.length === 0) {
         return (
             <Card>
                 <CardContent className="py-16 text-center">
@@ -221,24 +261,7 @@ export function StudioTab({
                     </div>
                     <h3 className="mt-6 text-lg font-semibold">No text blocks yet</h3>
                     <p className="mt-2 text-sm text-muted-foreground max-w-sm mx-auto">
-                        Run analysis on your manuscript first.
-                    </p>
-                </CardContent>
-            </Card>
-        );
-    }
-
-    if (projectStatus === "draft" || projectStatus === "analyzing") {
-        return (
-            <Card>
-                <CardContent className="py-16 text-center">
-                    <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted mx-auto">
-                        <AlertCircle className="h-10 w-10 text-muted-foreground" />
-                    </div>
-                    <h3 className="mt-6 text-lg font-semibold">Analysis Required</h3>
-                    <p className="mt-2 text-sm text-muted-foreground max-w-sm mx-auto">
-                        Run analysis on your manuscript first, then assign voices to
-                        characters in the Cast tab.
+                        Run analysis on this chapter first.
                     </p>
                 </CardContent>
             </Card>

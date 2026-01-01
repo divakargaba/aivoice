@@ -12,6 +12,7 @@ interface RunAnalysisButtonProps {
     chapterId: string;
     disabled?: boolean;
     onComplete?: () => void;
+    label?: string;
 }
 
 export function RunAnalysisButton({
@@ -19,6 +20,7 @@ export function RunAnalysisButton({
     chapterId,
     disabled,
     onComplete,
+    label,
 }: RunAnalysisButtonProps) {
     const [isPending, startTransition] = useTransition();
     const router = useRouter();
@@ -54,8 +56,7 @@ export function RunAnalysisButton({
     return (
         <Button onClick={handleAnalysis} disabled={disabled || isPending}>
             <Sparkles className="mr-2 h-4 w-4" />
-            {isPending ? "Analyzing..." : "Run Analysis"}
+            {isPending ? "Analyzing..." : label || "Run Analysis"}
         </Button>
     );
 }
-
