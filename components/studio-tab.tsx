@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { AlertCircle, Loader2, RotateCcw, Save, Play, Pause, Download, Sparkles } from "lucide-react";
+import { EmptyState } from "@/components/ui-kit/empty-state";
+import { AlertCircle, Loader2, RotateCcw, Save, Play, Pause, Download, Sparkles, Mic2 } from "lucide-react";
 import { regenerateBlockAudio, saveDirectorNotes, generateAudioForChapter } from "@/actions/audio";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -222,70 +223,66 @@ export function StudioTab({
 
     if (!chapter) {
         return (
-            <Card>
-                <CardContent className="py-16 text-center">
-                    <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted mx-auto">
-                        <AlertCircle className="h-10 w-10 text-muted-foreground" />
-                    </div>
-                    <h3 className="mt-6 text-lg font-semibold">No chapter selected</h3>
-                    <p className="mt-2 text-sm text-muted-foreground max-w-sm mx-auto">
-                        Select a chapter to start generating audio.
-                    </p>
-                </CardContent>
-            </Card>
+            <div className="card-premium-lg">
+                <EmptyState
+                    icon={<AlertCircle className="h-10 w-10 text-muted-foreground" />}
+                    title="No chapter selected"
+                    description="Select a chapter from the Manuscript tab to start generating audio."
+                    helpLink="/help"
+                />
+            </div>
         );
     }
 
     if (projectStatus === "analyzing") {
         return (
-            <Card>
-                <CardContent className="py-16 text-center">
-                    <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted mx-auto">
-                        <AlertCircle className="h-10 w-10 text-muted-foreground" />
+            <div className="card-premium-lg">
+                <div className="p-12 text-center space-y-4">
+                    <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+                        <Loader2 className="h-8 w-8 text-primary animate-spin" />
                     </div>
-                    <h3 className="mt-6 text-lg font-semibold">Analysis in progress</h3>
-                    <p className="mt-2 text-sm text-muted-foreground max-w-sm mx-auto">
+                    <h3 className="text-xl font-semibold">Analysis in progress</h3>
+                    <p className="text-muted-foreground max-w-md mx-auto">
                         Your chapter is being analyzed. This usually takes a minute or two.
                     </p>
-                </CardContent>
-            </Card>
+                </div>
+            </div>
         );
     }
 
     if (allBlocks.length === 0) {
         return (
-            <Card>
-                <CardContent className="py-16 text-center">
-                    <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted mx-auto">
-                        <AlertCircle className="h-10 w-10 text-muted-foreground" />
-                    </div>
-                    <h3 className="mt-6 text-lg font-semibold">No text blocks yet</h3>
-                    <p className="mt-2 text-sm text-muted-foreground max-w-sm mx-auto">
-                        Run analysis on this chapter first.
-                    </p>
-                </CardContent>
-            </Card>
+            <div className="card-premium-lg">
+                <EmptyState
+                    icon={<AlertCircle className="h-10 w-10 text-muted-foreground" />}
+                    title="No text blocks yet"
+                    description="Run analysis on this chapter in the Manuscript tab to detect characters and dialogue."
+                    helpLink="/help"
+                />
+            </div>
         );
     }
 
     // Show "Generate All Audio" prompt if no audio exists
     if (hasNoAudio) {
         return (
-            <Card>
-                <CardContent className="py-16 text-center">
-                    <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary/10 mx-auto">
+            <div className="card-premium-lg">
+                <div className="p-12 text-center space-y-6">
+                    <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
                         <Sparkles className="h-10 w-10 text-primary" />
                     </div>
-                    <h3 className="mt-6 text-lg font-semibold">Ready to Generate Audio</h3>
-                    <p className="mt-2 text-sm text-muted-foreground max-w-sm mx-auto">
-                        Your manuscript has been analyzed and voices are assigned.
-                        Click the button below to generate audio for all {allBlocks.length} blocks.
-                    </p>
+                    <div className="space-y-2">
+                        <h3 className="text-2xl font-bold">Ready to Generate Audio</h3>
+                        <p className="text-muted-foreground max-w-md mx-auto">
+                            Your manuscript has been analyzed and voices are assigned.
+                            Click the button below to generate audio for all {allBlocks.length} blocks.
+                        </p>
+                    </div>
                     <Button
                         onClick={handleGenerateAllAudio}
                         disabled={isGeneratingAll}
                         size="lg"
-                        className="mt-6 gap-2"
+                        className="gradient-primary border-0 gap-2"
                     >
                         {isGeneratingAll ? (
                             <>
@@ -299,11 +296,11 @@ export function StudioTab({
                             </>
                         )}
                     </Button>
-                    <p className="mt-4 text-xs text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">
                         This may take a few minutes depending on chapter length
                     </p>
-                </CardContent>
-            </Card>
+                </div>
+            </div>
         );
     }
 

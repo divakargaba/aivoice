@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
     Select,
@@ -10,9 +9,12 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Play, User } from "lucide-react";
+import { EmptyState } from "@/components/ui-kit/empty-state";
+import { BentoGrid, BentoCard } from "@/components/ui-kit/bento-grid";
+import { User, Mic2, HelpCircle, Play, Sparkles } from "lucide-react";
 import { setVoiceAssignment } from "@/actions/characters";
 import { toast } from "sonner";
+import Link from "next/link";
 
 interface VoiceAssignment {
     id: string;
@@ -74,7 +76,7 @@ export function CastTab({ projectId, characters }: CastTabProps) {
         startTransition(async () => {
             try {
                 await setVoiceAssignment(characterId, provider, voiceId);
-                toast.success("Voice assignment saved");
+                toast.success("Voice assigned successfully");
             } catch (error) {
                 toast.error(
                     error instanceof Error
@@ -91,89 +93,141 @@ export function CastTab({ projectId, characters }: CastTabProps) {
     ];
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-6">
             <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold">Characters & Voice Cast</h2>
-                <div className="text-sm text-muted-foreground">
-                    {otherCharacters.length} character{otherCharacters.length !== 1 ? "s" : ""}{" "}
-                    detected
+                <div>
+                    <h2 className="text-2xl font-bold">Assign Voices</h2>
+                    <p className="text-sm text-muted-foreground mt-1">
+                        Choose a unique voice for each character in your audiobook
+                    </p>
                 </div>
+                {allCharacters.length > 0 && (
+                    <div className="text-sm text-muted-foreground">
+                        {allCharacters.length} {allCharacters.length === 1 ? "character" : "characters"}
+                    </div>
+                )}
             </div>
 
             {otherCharacters.length === 0 && !narratorChar ? (
-                <Card>
-                    <CardContent className="py-16 text-center">
-                        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted mx-auto">
-                            <User className="h-10 w-10 text-muted-foreground" />
-                        </div>
-                        <h3 className="mt-6 text-lg font-semibold">No characters yet</h3>
-                        <p className="mt-2 text-sm text-muted-foreground max-w-sm mx-auto">
-                            Run analysis on your manuscript to automatically detect characters
-                            and dialogue.
-                        </p>
-                    </CardContent>
-                </Card>
+                <div className="card-premium-lg">
+                    <EmptyState
+                        icon={<User className="h-10 w-10 text-muted-foreground" />}
+                        title="No characters detected yet"
+                        description="Run analysis on your manuscript in the Manuscript tab to automatically detect all characters and their dialogue."
+                        primaryAction={{
+                            label: "Go to Manuscript Tab",
+                            onClick: () => {
+                                // This will be handled by parent component
+                            }
+                        }}
+                        secondaryAction={{
+                            label: "Browse Voices",
+                            href: "/voices"
+                        }}
+                        helpLink="/help"
+                    />
+                </div>
             ) : (
-                <div className="space-y-3">
+                <BentoGrid columns={2}>
                     {allCharacters.map((character) => (
-                        <Card
-                            key={character.id}
-                            className={character.isNarrator ? "border-primary/50" : ""}
-                        >
-                            <CardHeader className="pb-3">
-                                <CardTitle className="text-base flex items-center gap-2">
-                                    {character.isNarrator && (
-                                        <User className="h-4 w-4 text-primary" />
-                                    )}
-                                    {character.name}
-                                </CardTitle>
-                                {character.description && (
-                                    <p className="text-sm text-muted-foreground mt-1">
-                                        {character.description}
-                                    </p>
-                                )}
-                            </CardHeader>
-                            <CardContent className="pt-0">
-                                <div className="flex items-center gap-3">
+                        <BentoCard key={character.id} size="md" className={character.isNarrator ? "ring-2 ring-primary/50" : ""}>
+                            <div className="space-y-4">
+                                {/* Header */}
+                                <div className="flex items-start justify-between">
                                     <div className="flex-1">
-                                        <Select
-                                            value={selectedVoices[character.id] || ""}
-                                            onValueChange={(value) =>
-                                                handleVoiceChange(character.id, value)
-                                            }
-                                            disabled={isPending}
-                                        >
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select a voice..." />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {VOICE_OPTIONS.map((voice) => (
-                                                    <SelectItem
-                                                        key={`${voice.provider}_${voice.id}`}
-                                                        value={`${voice.provider}_${voice.id}`}
-                                                    >
-                                                        {voice.name}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
+                                        <div className="flex items-center gap-2 mb-2">
+                                            {character.isNarrator && (
+                                                <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center">
+                                                    <User className="h-4 w-4 text-primary" />
+                                                </div>
+                                            )}
+                                            <h3 className="font-semibold text-lg">{character.name}</h3>
+                                            {character.isNarrator && (
+                                                <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">
+                                                    Default
+                                                </span>
+                                            )}
+                                        </div>
+                                        {character.description && (
+                                            <p className="text-sm text-muted-foreground">
+                                                {character.description}
+                                            </p>
+                                        )}
+                                        {character.isNarrator && (
+                                            <p className="text-xs text-muted-foreground mt-2">
+                                                Used for all narration and unassigned dialogue
+                                            </p>
+                                        )}
                                     </div>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        disabled
-                                        className="gap-2"
-                                    >
-                                        <Play className="h-3 w-3" />
-                                        Preview
-                                    </Button>
                                 </div>
-                            </CardContent>
-                        </Card>
+
+                                {/* Voice Selection */}
+                                <div className="space-y-3 pt-4 border-t border-border">
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-sm font-medium">Voice</label>
+                                        <Link href="/voices" className="text-muted-foreground hover:text-foreground">
+                                            <HelpCircle className="h-4 w-4" />
+                                        </Link>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">
+                                        Preview voices on the Voices page before assigning
+                                    </p>
+                                    <Select
+                                        value={selectedVoices[character.id] || ""}
+                                        onValueChange={(value) =>
+                                            handleVoiceChange(character.id, value)
+                                        }
+                                        disabled={isPending}
+                                    >
+                                        <SelectTrigger className="bg-background">
+                                            <SelectValue placeholder="Select a voice..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {VOICE_OPTIONS.map((voice) => (
+                                                <SelectItem
+                                                    key={`${voice.provider}_${voice.id}`}
+                                                    value={`${voice.provider}_${voice.id}`}
+                                                >
+                                                    {voice.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    {selectedVoices[character.id] && (
+                                        <div className="flex items-center gap-2 text-xs text-green-400">
+                                            <Sparkles className="h-3 w-3" />
+                                            <span>Voice assigned</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </BentoCard>
                     ))}
+                </BentoGrid>
+            )}
+
+            {/* Helper Card */}
+            {allCharacters.length > 0 && (
+                <div className="card-premium-lg p-6">
+                    <div className="flex items-start gap-4">
+                        <div className="h-10 w-10 rounded-lg bg-accent/20 flex items-center justify-center shrink-0">
+                            <Mic2 className="h-5 w-5 text-accent" />
+                        </div>
+                        <div className="flex-1">
+                            <h3 className="font-semibold mb-2">Need More Voices?</h3>
+                            <p className="text-sm text-muted-foreground mb-4">
+                                Browse our full library of 50+ voices with previews on the Voices page.
+                            </p>
+                            <Link href="/voices">
+                                <Button variant="outline" size="sm" className="gap-2">
+                                    <Mic2 className="h-4 w-4" />
+                                    Browse All Voices
+                                </Button>
+                            </Link>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>
     );
 }
-

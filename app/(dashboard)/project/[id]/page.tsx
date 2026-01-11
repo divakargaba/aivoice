@@ -26,6 +26,9 @@ import {
 import { RunAnalysisButton } from "@/components/run-analysis-button";
 import { CastTab } from "@/components/cast-tab";
 import { StudioTab } from "@/components/studio-tab";
+import { PageHeader } from "@/components/ui-kit/page-header";
+import { StepIndicator } from "@/components/ui-kit/step-indicator";
+import { EmptyState } from "@/components/ui-kit/empty-state";
 import {
     ArrowDown,
     ArrowUp,
@@ -35,6 +38,11 @@ import {
     Sparkles,
     Trash2,
     Users,
+    FileText,
+    Mic2,
+    Play,
+    Download,
+    Upload,
 } from "lucide-react";
 import {
     createChapter,
@@ -148,10 +156,6 @@ export default function ProjectPage({ params }: ProjectPageProps) {
         setActiveTab("cast");
     };
 
-    const activeChapter = project?.chapters.find(
-        (chapter) => chapter.id === activeChapterId
-    ) || null;
-
     const openAddChapterDialog = () => {
         const nextIndex = project ? project.chapters.length + 1 : 1;
         setEditingChapter(null);
@@ -161,6 +165,8 @@ export default function ProjectPage({ params }: ProjectPageProps) {
     };
 
     const openEditChapterDialog = () => {
+        if (!project) return;
+        const activeChapter = project.chapters.find(ch => ch.id === activeChapterId) || project.chapters[0];
         if (!activeChapter) return;
         setEditingChapter(activeChapter);
         setChapterTitle(activeChapter.title);
@@ -205,8 +211,9 @@ export default function ProjectPage({ params }: ProjectPageProps) {
     };
 
     const handleDeleteChapter = () => {
-        if (!activeChapter) return;
         if (!project) return;
+        const activeChapter = project.chapters.find(ch => ch.id === activeChapterId) || project.chapters[0];
+        if (!activeChapter) return;
 
         const confirmed = window.confirm(
             `Delete "${activeChapter.title}"? This will remove its text blocks and audio.`
@@ -274,10 +281,37 @@ export default function ProjectPage({ params }: ProjectPageProps) {
         }
     };
 
+    // Calculate current step
+    const getCurrentStep = (): number => {
+        if (!project) return 0;
+        if (project.chapters.length === 0 || !project.chapters[0]?.rawText) return 0; // Upload
+        if (project.status === "analyzing") return 1; // Analyze
+        const hasTextBlocks = project.chapters.some(ch => ch.textBlocks.length > 0);
+        if (!hasTextBlocks) return 1; // Analyze
+        const hasVoiceAssignments = project.characters.some(char => char.voiceAssignments.length > 0);
+        if (!hasVoiceAssignments) return 2; // Assign voices
+        const hasAudio = project.chapters.some(ch => 
+            ch.textBlocks.some(block => block.audioSegment)
+        );
+        if (!hasAudio) return 3; // Generate
+        return 4; // Listen/Export
+    };
+
+    const steps = [
+        { id: "upload", label: "Upload", description: "Add manuscript" },
+        { id: "analyze", label: "Analyze", description: "Detect characters" },
+        { id: "cast", label: "Assign Voices", description: "Choose voices" },
+        { id: "generate", label: "Generate", description: "Create audio" },
+        { id: "listen", label: "Listen & Export", description: "Review & download" },
+    ];
+
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-[400px]">
-                <p className="text-muted-foreground">Loading project...</p>
+                <div className="text-center space-y-4">
+                    <div className="h-12 w-12 rounded-full border-4 border-primary/30 border-t-primary animate-spin mx-auto" />
+                    <p className="text-muted-foreground">Loading project...</p>
+                </div>
             </div>
         );
     }
@@ -285,37 +319,34 @@ export default function ProjectPage({ params }: ProjectPageProps) {
     if (!project) {
         return (
             <div className="flex items-center justify-center min-h-[400px]">
-                <p className="text-muted-foreground">Project not found</p>
+                <div className="text-center space-y-4">
+                    <p className="text-muted-foreground">Project not found</p>
+                </div>
             </div>
         );
     }
 
+    const currentStep = getCurrentStep();
+    const activeChapter = project.chapters.find(ch => ch.id === activeChapterId) || project.chapters[0];
+
     return (
-        <div className="space-y-6">
-            {/* Project Header */}
-            <div className="flex items-start justify-between gap-6">
-                <div className="space-y-1">
-                    <h1 className="text-3xl font-bold">{project.title}</h1>
-                    <div className="flex items-center gap-2">
-                        <Badge variant={getStatusVariant(project.status)} className="capitalize">
-                            {project.status}
-                        </Badge>
-                        <span className="text-sm text-muted-foreground">
-                            {project.chapters.length} {project.chapters.length === 1 ? "chapter" : "chapters"}
-                        </span>
-                    </div>
-                </div>
-                <div className="flex items-center gap-3">
-                    {project.chapters.length > 0 && (
-                        <div className="flex items-center gap-2">
-                            <span className="text-sm text-muted-foreground">Active chapter</span>
+        <div className="space-y-8">
+            {/* Page Header */}
+            <PageHeader
+                title={project.title}
+                subtitle={`${project.chapters.length} ${project.chapters.length === 1 ? "chapter" : "chapters"} • ${project.status}`}
+                breadcrumbs={[{ label: project.title }]}
+                actions={
+                    project.chapters.length > 0 && (
+                        <div className="flex items-center gap-3">
+                            <span className="text-sm text-muted-foreground hidden sm:inline">Chapter</span>
                             <Select
                                 value={activeChapterId || ""}
                                 onValueChange={(value) => setActiveChapterId(value)}
                                 disabled={project.chapters.length === 0}
                             >
-                                <SelectTrigger className="w-[220px]">
-                                    <SelectValue placeholder="Select a chapter" />
+                                <SelectTrigger className="w-[200px]">
+                                    <SelectValue placeholder="Select chapter" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {project.chapters.map((chapter, index) => (
@@ -326,31 +357,78 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                                 </SelectContent>
                             </Select>
                         </div>
-                    )}
-                </div>
+                    )
+                }
+            />
+
+            {/* Step Indicator */}
+            <div className="card-premium-lg p-6">
+                <StepIndicator steps={steps} currentStep={currentStep} />
             </div>
 
             {/* Tabs */}
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-                <TabsList>
-                    <TabsTrigger value="manuscript">
-                        <Sparkles className="mr-2 h-4 w-4" />
-                        Manuscript
-                    </TabsTrigger>
-                    <TabsTrigger value="cast">
-                        <Users className="mr-2 h-4 w-4" />
-                        Cast
-                    </TabsTrigger>
-                    <TabsTrigger value="studio">
-                        <Mic className="mr-2 h-4 w-4" />
-                        Studio
-                    </TabsTrigger>
-                </TabsList>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+                <div className="flex items-center justify-between">
+                    <TabsList className="bg-muted/50">
+                        <TabsTrigger value="manuscript" className="gap-2">
+                            <FileText className="h-4 w-4" />
+                            Manuscript
+                        </TabsTrigger>
+                        <TabsTrigger value="cast" className="gap-2">
+                            <Users className="h-4 w-4" />
+                            Cast
+                        </TabsTrigger>
+                        <TabsTrigger value="studio" className="gap-2">
+                            <Mic2 className="h-4 w-4" />
+                            Studio
+                        </TabsTrigger>
+                    </TabsList>
+                    
+                    {/* Next Action Prompt */}
+                    {currentStep === 0 && (
+                        <div className="flex items-center gap-3">
+                            <p className="text-sm text-muted-foreground hidden sm:inline">
+                                Next: Upload your manuscript
+                            </p>
+                        </div>
+                    )}
+                    {currentStep === 1 && activeChapter && (
+                        <div className="flex items-center gap-3">
+                            <p className="text-sm text-muted-foreground hidden sm:inline">
+                                Next: Run analysis
+                            </p>
+                            <RunAnalysisButton
+                                projectId={project.id}
+                                chapterId={activeChapter.id}
+                                onComplete={handleAnalysisComplete}
+                            />
+                        </div>
+                    )}
+                    {currentStep === 2 && (
+                        <div className="flex items-center gap-3">
+                            <p className="text-sm text-muted-foreground hidden sm:inline">
+                                Next: Assign voices to characters
+                            </p>
+                        </div>
+                    )}
+                    {currentStep === 3 && (
+                        <div className="flex items-center gap-3">
+                            <p className="text-sm text-muted-foreground hidden sm:inline">
+                                Next: Generate audio
+                            </p>
+                        </div>
+                    )}
+                </div>
 
                 {/* Manuscript Tab */}
-                <TabsContent value="manuscript" className="space-y-4">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                        <h2 className="text-xl font-semibold">Manuscript Content</h2>
+                <TabsContent value="manuscript" className="space-y-6">
+                    <div className="flex flex-wrap items-center justify-between gap-4">
+                        <div>
+                            <h2 className="text-2xl font-bold">Manuscript</h2>
+                            <p className="text-sm text-muted-foreground mt-1">
+                                Upload and manage your chapter text
+                            </p>
+                        </div>
                         <div className="flex flex-wrap items-center gap-2">
                             <Button
                                 onClick={openAddChapterDialog}
@@ -362,55 +440,64 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                                 <Plus className="h-4 w-4" />
                                 Add Chapter
                             </Button>
-                            <Button
-                                onClick={openEditChapterDialog}
-                                variant="outline"
-                                size="sm"
-                                className="gap-2"
-                                disabled={!activeChapter || isPending}
-                            >
-                                <Pencil className="h-4 w-4" />
-                                Edit Chapter
-                            </Button>
-                            <Button
-                                onClick={handleDeleteChapter}
-                                variant="destructive"
-                                size="sm"
-                                className="gap-2"
-                                disabled={!activeChapter || isPending}
-                            >
-                                <Trash2 className="h-4 w-4" />
-                                Delete
-                            </Button>
                             {activeChapter && (
-                                <RunAnalysisButton
-                                    projectId={project.id}
-                                    chapterId={activeChapter.id}
-                                    disabled={
-                                        project.status === "analyzing" ||
-                                        !activeChapter.rawText
-                                    }
-                                    label={
-                                        activeChapter.textBlocks.length > 0
-                                            ? "Re-run Analysis"
-                                            : "Run Analysis"
-                                    }
-                                    onComplete={handleAnalysisComplete}
-                                />
+                                <>
+                                    <Button
+                                        onClick={openEditChapterDialog}
+                                        variant="outline"
+                                        size="sm"
+                                        className="gap-2"
+                                        disabled={isPending}
+                                    >
+                                        <Pencil className="h-4 w-4" />
+                                        Edit
+                                    </Button>
+                                    <Button
+                                        onClick={handleDeleteChapter}
+                                        variant="destructive"
+                                        size="sm"
+                                        className="gap-2"
+                                        disabled={isPending}
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                        Delete
+                                    </Button>
+                                    <RunAnalysisButton
+                                        projectId={project.id}
+                                        chapterId={activeChapter.id}
+                                        disabled={
+                                            project.status === "analyzing" ||
+                                            !activeChapter.rawText
+                                        }
+                                        label={
+                                            activeChapter.textBlocks.length > 0
+                                                ? "Re-run Analysis"
+                                                : "Run Analysis"
+                                        }
+                                        onComplete={handleAnalysisComplete}
+                                    />
+                                </>
                             )}
                         </div>
                     </div>
 
                     {project.chapters.length === 0 ? (
-                        <Card>
-                            <CardContent className="py-8 text-center text-muted-foreground">
-                                No chapters yet
-                            </CardContent>
-                        </Card>
+                        <div className="card-premium-lg">
+                            <EmptyState
+                                icon={<FileText className="h-10 w-10 text-muted-foreground" />}
+                                title="No chapters yet"
+                                description="Add your first chapter by uploading your manuscript text. You can add multiple chapters to organize your audiobook."
+                                primaryAction={{
+                                    label: "Add Chapter",
+                                    onClick: openAddChapterDialog
+                                }}
+                                helpLink="/help"
+                            />
+                        </div>
                     ) : (
-                        <div className="grid gap-4 lg:grid-cols-[280px_1fr]">
-                            <Card className="h-fit">
-                                <CardContent className="p-4 space-y-2">
+                        <div className="grid gap-6 lg:grid-cols-[300px_1fr]">
+                            <div className="card-premium-lg h-fit">
+                                <div className="p-4 space-y-2">
                                     {project.chapters.map((chapter, index) => (
                                         <button
                                             key={chapter.id}
@@ -463,35 +550,46 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                                             </div>
                                         </button>
                                     ))}
-                                </CardContent>
-                            </Card>
+                                </div>
+                            </div>
 
-                            <Card>
-                                <CardContent className="p-6 space-y-3">
+                            <div className="card-premium-lg">
+                                <div className="p-6 space-y-4">
                                     {activeChapter ? (
                                         <>
-                                            <h3 className="font-semibold text-lg">
-                                                {activeChapter.title}
-                                            </h3>
+                                            <div className="flex items-center justify-between">
+                                                <h3 className="text-xl font-bold">
+                                                    {activeChapter.title}
+                                                </h3>
+                                                {activeChapter.textBlocks.length > 0 && (
+                                                    <span className="text-sm text-muted-foreground">
+                                                        {activeChapter.textBlocks.length} blocks
+                                                    </span>
+                                                )}
+                                            </div>
                                             {activeChapter.rawText ? (
-                                                <div className="rounded-md border bg-muted/30 p-4 max-h-[480px] overflow-y-auto">
-                                                    <p className="text-sm text-foreground/80 whitespace-pre-wrap font-mono leading-relaxed">
+                                                <div className="rounded-lg border border-border bg-muted/20 p-6 max-h-[600px] overflow-y-auto scrollbar-premium">
+                                                    <p className="text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed font-sans">
                                                         {activeChapter.rawText}
                                                     </p>
                                                 </div>
                                             ) : (
-                                                <p className="text-sm text-muted-foreground italic">
-                                                    No content
-                                                </p>
+                                                <div className="card-premium p-8 text-center">
+                                                    <p className="text-muted-foreground">
+                                                        No content yet. Edit this chapter to add text.
+                                                    </p>
+                                                </div>
                                             )}
                                         </>
                                     ) : (
-                                        <p className="text-sm text-muted-foreground">
-                                            Select a chapter to view its content.
-                                        </p>
+                                        <div className="card-premium p-8 text-center">
+                                            <p className="text-muted-foreground">
+                                                Select a chapter to view its content.
+                                            </p>
+                                        </div>
                                     )}
-                                </CardContent>
-                            </Card>
+                                </div>
+                            </div>
                         </div>
                     )}
                 </TabsContent>
