@@ -20,7 +20,7 @@ interface ElevenLabsVoice {
     labels?: VoiceLabelMap;
 }
 
-const DEFAULT_PREVIEW_TEXT = "The quick brown fox jumps over the lazy dog.";
+const DEFAULT_PREVIEW_TEXT = "Hello, this is a preview of how this voice sounds.";
 
 export default function VoicesPage() {
     const [voices, setVoices] = useState<ElevenLabsVoice[]>([]);
@@ -155,11 +155,11 @@ export default function VoicesPage() {
         <div className="space-y-8">
             <PageHeader
                 title="Browse Voices"
-                subtitle="Preview and explore 50+ professional AI voices from ElevenLabs"
+                subtitle="Preview and explore available voices for your audiobook"
             />
 
             {/* Search & Preview Controls */}
-            <div className="card-premium-lg p-6 space-y-4">
+            <div className="surface p-6 space-y-4">
                 <div className="grid gap-4 md:grid-cols-2">
                     <div className="relative">
                         <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -167,35 +167,34 @@ export default function VoicesPage() {
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
                             placeholder="Search by name, style, or category..."
-                            className="pl-9 bg-background"
+                            className="pl-9"
                         />
                     </div>
                     <Input
                         value={previewText}
                         onChange={(e) => setPreviewText(e.target.value)}
-                        placeholder="Preview text (what to say)"
-                        className="bg-background"
+                        placeholder="Preview text (optional)"
                     />
                 </div>
-                <p className="text-xs text-muted-foreground">
-                    💡 Change the preview text to hear how each voice sounds with your own words
+                <p className="text-sm text-muted-foreground">
+                    Change the preview text to hear how each voice sounds with your own words
                 </p>
             </div>
 
             {/* Results */}
             {isLoading ? (
-                <div className="card-premium-lg p-12">
+                <div className="surface p-12">
                     <div className="flex flex-col items-center justify-center space-y-4">
                         <Loader2 className="h-8 w-8 animate-spin text-primary" />
                         <p className="text-muted-foreground">Loading voices...</p>
                     </div>
                 </div>
             ) : filteredVoices.length === 0 ? (
-                <div className="card-premium-lg">
+                <div className="surface-elevated">
                     <EmptyState
-                        icon={<Mic2 className="h-10 w-10 text-muted-foreground" />}
+                        icon={<Mic2 className="h-12 w-12 text-muted-foreground" />}
                         title="No voices found"
-                        description="Try adjusting your search query to find voices that match your criteria."
+                        description="Try adjusting your search to find voices that match your criteria."
                         helpLink="/help"
                     />
                 </div>
@@ -203,7 +202,7 @@ export default function VoicesPage() {
                 <>
                     <div className="flex items-center justify-between">
                         <p className="text-sm text-muted-foreground">
-                            {filteredVoices.length} {filteredVoices.length === 1 ? "voice" : "voices"} found
+                            {filteredVoices.length} {filteredVoices.length === 1 ? "voice" : "voices"} available
                         </p>
                     </div>
                     <BentoGrid columns={3}>

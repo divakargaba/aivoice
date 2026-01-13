@@ -13,12 +13,12 @@ interface ProjectCardProps {
   className?: string;
 }
 
-const statusConfig: Record<string, { label: string; color: string }> = {
-  draft: { label: "Draft", color: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20" },
-  analyzing: { label: "Analyzing", color: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20" },
-  ready: { label: "Ready", color: "bg-green-500/10 text-green-400 border-green-500/20" },
-  generating: { label: "Generating", color: "bg-blue-500/10 text-blue-400 border-blue-500/20" },
-  published: { label: "Complete", color: "bg-purple-500/10 text-purple-400 border-purple-500/20" },
+const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "outline" }> = {
+  draft: { label: "Draft", variant: "secondary" },
+  analyzing: { label: "Analyzing", variant: "default" },
+  ready: { label: "Ready", variant: "default" },
+  generating: { label: "Generating", variant: "default" },
+  published: { label: "Complete", variant: "default" },
 };
 
 export function ProjectCard({
@@ -34,19 +34,19 @@ export function ProjectCard({
   const timeAgo = getTimeAgo(lastUpdated);
 
   return (
-    <Link href={href}>
+    <Link href={href} className="block">
       <div
         className={cn(
-          "card-premium-lg p-6 space-y-4 hover-lift group cursor-pointer",
+          "surface-elevated p-6 space-y-4 transition-all hover:shadow-lg group cursor-pointer",
           className
         )}
       >
         {/* Header */}
         <div className="flex items-start justify-between gap-4">
-          <h3 className="font-semibold text-lg line-clamp-2 group-hover:text-primary transition-colors flex-1">
+          <h3 className="text-title text-foreground line-clamp-2 group-hover:text-primary transition-colors flex-1">
             {title}
           </h3>
-          <Badge className={cn("shrink-0 border", statusInfo.color)}>
+          <Badge variant={statusInfo.variant} className="shrink-0">
             {statusInfo.label}
           </Badge>
         </div>
@@ -63,10 +63,10 @@ export function ProjectCard({
           </div>
         </div>
 
-        {/* CTA */}
-        <div className="flex items-center justify-between pt-2 border-t border-border">
+        {/* Footer */}
+        <div className="flex items-center justify-between pt-3 border-t border-border">
           <span className="text-sm text-muted-foreground">Open project</span>
-          <ArrowRight className="h-4 w-4 text-primary group-hover:translate-x-1 transition-transform" />
+          <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
         </div>
       </div>
     </Link>
@@ -85,4 +85,3 @@ function getTimeAgo(date: Date): string {
   if (minutes > 0) return `${minutes}m ago`;
   return "Just now";
 }
-

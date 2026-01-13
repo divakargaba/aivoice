@@ -43,7 +43,7 @@ export function VoiceCard({
   return (
     <div
       className={cn(
-        "card-premium p-6 space-y-4 hover-lift cursor-pointer transition-all",
+        "surface p-6 space-y-4 transition-all hover:shadow-md cursor-pointer",
         isSelected && "ring-2 ring-primary border-primary",
         className
       )}
@@ -52,7 +52,7 @@ export function VoiceCard({
       {/* Header */}
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-lg mb-1 truncate">{name}</h3>
+          <h3 className="text-title text-foreground mb-1.5 truncate">{name}</h3>
           {description && (
             <p className="text-sm text-muted-foreground line-clamp-2">
               {description}
@@ -60,7 +60,7 @@ export function VoiceCard({
           )}
         </div>
         {isSelected && (
-          <div className="ml-2 shrink-0">
+          <div className="ml-3 shrink-0">
             <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center">
               <Check className="h-4 w-4 text-primary-foreground" />
             </div>
@@ -95,7 +95,7 @@ export function VoiceCard({
       )}
 
       {/* Actions */}
-      <div className="flex items-center gap-2 pt-2 border-t border-border">
+      <div className="flex items-center gap-2 pt-3 border-t border-border">
         <Button
           variant="outline"
           size="sm"
@@ -133,4 +133,3 @@ export function VoiceCard({
     </div>
   );
 }
-

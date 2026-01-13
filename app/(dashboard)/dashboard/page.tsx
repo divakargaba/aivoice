@@ -8,11 +8,9 @@ import { ProjectCard } from "@/components/ui-kit/project-card";
 import {
     BookOpen,
     FileText,
-    Sparkles,
+    CheckCircle2,
     Plus,
-    Mic2,
-    Play,
-    HelpCircle
+    ArrowRight,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -29,59 +27,28 @@ export default async function DashboardPage() {
         <div className="space-y-8">
             <PageHeader
                 title="Dashboard"
-                subtitle="Manage your audiobook projects and create new ones"
+                subtitle="Create and manage your audiobook projects"
                 actions={<CreateProjectDialog />}
             />
 
-            {/* Quick Actions - Bento Grid */}
-            <BentoGrid columns={3}>
-                <BentoCard size="md" className="hover-lift">
-                    <div className="space-y-3">
-                        <div className="h-10 w-10 rounded-lg gradient-primary flex items-center justify-center">
-                            <Plus className="h-5 w-5 text-white" />
-                        </div>
-                        <div>
-                            <h3 className="font-semibold mb-1">New Project</h3>
-                            <p className="text-sm text-muted-foreground mb-4">
-                                Create a new audiobook from your manuscript
-                            </p>
-                            <CreateProjectDialog />
-                        </div>
+            {/* Quick Start Card */}
+            {totalProjects === 0 && (
+                <div className="surface-elevated p-10">
+                    <EmptyState
+                        icon={<BookOpen className="h-12 w-12 text-muted-foreground" />}
+                        title="Welcome to Audiobook Studio"
+                        description="Create your first audiobook project. Upload your manuscript, choose voices for your characters, and generate professional audio."
+                        secondaryAction={{
+                            label: "Learn how it works",
+                            href: "/how-it-works"
+                        }}
+                        helpLink="/help"
+                    />
+                    <div className="flex justify-center mt-6">
+                        <CreateProjectDialog />
                     </div>
-                </BentoCard>
-
-                <BentoCard size="md" className="hover-lift cursor-pointer group">
-                    <Link href="/voices" className="block">
-                        <div className="space-y-3">
-                            <div className="h-10 w-10 rounded-lg bg-accent/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                <Mic2 className="h-5 w-5 text-accent" />
-                            </div>
-                            <div>
-                                <h3 className="font-semibold mb-1">Browse Voices</h3>
-                                <p className="text-sm text-muted-foreground">
-                                    Preview and explore available AI voices
-                                </p>
-                            </div>
-                        </div>
-                    </Link>
-                </BentoCard>
-
-                <BentoCard size="md" className="hover-lift cursor-pointer group">
-                    <Link href="/help" className="block">
-                        <div className="space-y-3">
-                            <div className="h-10 w-10 rounded-lg bg-green-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                <HelpCircle className="h-5 w-5 text-green-400" />
-                            </div>
-                            <div>
-                                <h3 className="font-semibold mb-1">Get Help</h3>
-                                <p className="text-sm text-muted-foreground">
-                                    Guides, tips, and FAQs
-                                </p>
-                            </div>
-                        </div>
-                    </Link>
-                </BentoCard>
-            </BentoGrid>
+                </div>
+            )}
 
             {/* Stats */}
             {totalProjects > 0 && (
@@ -99,35 +66,24 @@ export default async function DashboardPage() {
                     <StatCard
                         label="Ready to Export"
                         value={readyProjects}
-                        icon={<Sparkles className="h-5 w-5" />}
+                        icon={<CheckCircle2 className="h-5 w-5" />}
                     />
                 </BentoGrid>
             )}
 
             {/* Projects Section */}
-            <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                    <h2 className="text-2xl font-bold">Your Projects</h2>
-                    {totalProjects > 0 && <CreateProjectDialog />}
-                </div>
-
-                {totalProjects === 0 ? (
-                    <div className="card-premium-lg">
-                        <EmptyState
-                            icon={<BookOpen className="h-10 w-10 text-muted-foreground" />}
-                            title="No projects yet"
-                            description="Create your first audiobook project to get started. Upload your manuscript and we'll guide you through the process."
-                            secondaryAction={{
-                                label: "Browse Voices",
-                                href: "/voices"
-                            }}
-                            helpLink="/help"
-                        />
-                        <div className="px-6 pb-6 flex justify-center">
-                            <CreateProjectDialog />
+            {totalProjects > 0 && (
+                <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h2 className="text-headline text-foreground">Your Projects</h2>
+                            <p className="text-body text-muted-foreground mt-1">
+                                Continue working on your projects or create a new one
+                            </p>
                         </div>
+                        <CreateProjectDialog />
                     </div>
-                ) : (
+
                     <BentoGrid columns={3}>
                         {projects.map((project) => (
                             <ProjectCard
@@ -141,8 +97,28 @@ export default async function DashboardPage() {
                             />
                         ))}
                     </BentoGrid>
-                )}
-            </div>
+                </div>
+            )}
+
+            {/* Help Section */}
+            {totalProjects > 0 && (
+                <div className="surface p-6">
+                    <div className="flex items-start justify-between">
+                        <div className="space-y-2">
+                            <h3 className="text-title text-foreground">Need help getting started?</h3>
+                            <p className="text-body text-muted-foreground">
+                                Learn how to create your first audiobook with our step-by-step guide.
+                            </p>
+                        </div>
+                        <Link href="/how-it-works">
+                            <Button variant="outline" className="gap-2">
+                                View guide
+                                <ArrowRight className="h-4 w-4" />
+                            </Button>
+                        </Link>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

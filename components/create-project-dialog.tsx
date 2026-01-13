@@ -37,7 +37,7 @@ export function CreateProjectDialog() {
             const fileExtension = selectedFile.name.toLowerCase().slice(selectedFile.name.lastIndexOf("."));
 
             if (!validTypes.includes(selectedFile.type) && !validExtensions.includes(fileExtension)) {
-                toast.error("Invalid file type. Please upload a .txt or .md file.");
+                toast.error("Please upload a .txt or .md file.");
                 return;
             }
 
@@ -114,8 +114,7 @@ export function CreateProjectDialog() {
                     <DialogHeader>
                         <DialogTitle>Create New Project</DialogTitle>
                         <DialogDescription>
-                            Add your manuscript text to get started. You can paste it directly
-                            or upload a .txt or .md file.
+                            Add your manuscript to get started. You can paste text directly or upload a file.
                         </DialogDescription>
                     </DialogHeader>
 
@@ -125,7 +124,7 @@ export function CreateProjectDialog() {
                             <Label htmlFor="title">Project Title</Label>
                             <Input
                                 id="title"
-                                placeholder="My Audiobook Project"
+                                placeholder="My Audiobook"
                                 value={title}
                                 onChange={(e) => setTitle(e.target.value)}
                                 disabled={isPending}
@@ -161,18 +160,17 @@ export function CreateProjectDialog() {
                                     <div className="flex items-center justify-center w-full">
                                         <label
                                             htmlFor="file-upload"
-                                            className={`flex flex-col items-center justify-center w-full h-[200px] border-2 border-dashed rounded-lg cursor-pointer hover:bg-accent/50 ${isPending ? "opacity-50 cursor-not-allowed" : ""
+                                            className={`flex flex-col items-center justify-center w-full h-[200px] border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors ${isPending ? "opacity-50 cursor-not-allowed" : ""
                                                 }`}
                                         >
                                             <div className="flex flex-col items-center justify-center pt-5 pb-6">
                                                 <Upload className="w-10 h-10 mb-3 text-muted-foreground" />
                                                 <p className="mb-2 text-sm text-muted-foreground">
                                                     {file ? (
-                                                        <span className="font-semibold">{file.name}</span>
+                                                        <span className="font-medium">{file.name}</span>
                                                     ) : (
                                                         <>
-                                                            <span className="font-semibold">Click to upload</span> or
-                                                            drag and drop
+                                                            <span className="font-medium">Click to upload</span> or drag and drop
                                                         </>
                                                     )}
                                                 </p>
@@ -213,4 +211,3 @@ export function CreateProjectDialog() {
         </Dialog>
     );
 }
-

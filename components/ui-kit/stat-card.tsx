@@ -21,7 +21,7 @@ export function StatCard({
 }: StatCardProps) {
   return (
     <div className={cn(
-      "card-premium p-6 space-y-2",
+      "surface p-6 space-y-2",
       className
     )}>
       <div className="flex items-center justify-between">
@@ -33,7 +33,7 @@ export function StatCard({
         )}
       </div>
       <div className="flex items-baseline gap-2">
-        <p className="text-3xl font-bold">{value}</p>
+        <p className="text-3xl font-bold text-foreground">{value}</p>
         {trend && (
           <span className={cn(
             "text-sm font-medium",
@@ -46,4 +46,3 @@ export function StatCard({
     </div>
   );
 }
-

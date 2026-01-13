@@ -24,7 +24,7 @@ export default function ExamplesPage() {
     <div className="space-y-8">
       <PageHeader
         title="Example Projects"
-        subtitle="Explore sample projects to see how AI Voice works"
+        subtitle="Explore sample projects to see how it works"
       />
 
       <BentoGrid columns={2}>
@@ -33,10 +33,10 @@ export default function ExamplesPage() {
             <div className="space-y-4">
               <div className="flex items-start justify-between">
                 <div className="space-y-2">
-                  <h3 className="text-xl font-bold">{example.title}</h3>
-                  <p className="text-sm text-muted-foreground">{example.description}</p>
+                  <h3 className="text-title text-foreground">{example.title}</h3>
+                  <p className="text-body text-muted-foreground">{example.description}</p>
                 </div>
-                <div className="h-12 w-12 rounded-xl bg-primary/20 flex items-center justify-center shrink-0">
+                <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                   <BookOpen className="h-6 w-6 text-primary" />
                 </div>
               </div>
@@ -52,7 +52,7 @@ export default function ExamplesPage() {
                   <Play className="h-4 w-4" />
                   Preview
                 </Button>
-                <Button className="gradient-primary border-0 gap-2" disabled>
+                <Button className="gap-2" disabled>
                   Use as Template
                   <ArrowRight className="h-4 w-4" />
                 </Button>
@@ -62,13 +62,13 @@ export default function ExamplesPage() {
         ))}
       </BentoGrid>
 
-      <div className="card-premium-lg p-8 text-center space-y-4">
-        <h3 className="text-xl font-bold">Want to see it in action?</h3>
-        <p className="text-muted-foreground">
+      <div className="surface-elevated p-12 text-center space-y-4">
+        <h3 className="text-headline text-foreground">Want to see it in action?</h3>
+        <p className="text-body text-muted-foreground">
           Create your own project to experience the full workflow
         </p>
         <Link href="/dashboard">
-          <Button size="lg" className="gradient-primary border-0 gap-2">
+          <Button size="lg" className="gap-2">
             Create Your First Project
             <ArrowRight className="h-5 w-5" />
           </Button>
@@ -77,4 +77,3 @@ export default function ExamplesPage() {
     </div>
   );
 }
-

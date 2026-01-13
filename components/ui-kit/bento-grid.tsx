@@ -53,7 +53,7 @@ export function BentoCard({
   return (
     <div
       className={cn(
-        "card-premium",
+        "surface",
         sizeClasses[size],
         span === 2 && "md:col-span-2",
         className
@@ -63,4 +63,3 @@ export function BentoCard({
     </div>
   );
 }
-

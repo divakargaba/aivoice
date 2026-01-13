@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/select";
 import { EmptyState } from "@/components/ui-kit/empty-state";
 import { BentoGrid, BentoCard } from "@/components/ui-kit/bento-grid";
-import { User, Mic2, HelpCircle, Play, Sparkles } from "lucide-react";
+import { User, Mic2, HelpCircle, Sparkles } from "lucide-react";
 import { setVoiceAssignment } from "@/actions/characters";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -57,7 +57,6 @@ export function CastTab({ projectId, characters }: CastTabProps) {
     const [selectedVoices, setSelectedVoices] = useState<Record<string, string>>(
         () => {
             const initial: Record<string, string> = {};
-            // Existing assignments
             characters.forEach((char) => {
                 if (char.voiceAssignments[0]) {
                     const va = char.voiceAssignments[0];
@@ -76,7 +75,7 @@ export function CastTab({ projectId, characters }: CastTabProps) {
         startTransition(async () => {
             try {
                 await setVoiceAssignment(characterId, provider, voiceId);
-                toast.success("Voice assigned successfully");
+                toast.success("Voice assigned");
             } catch (error) {
                 toast.error(
                     error instanceof Error
@@ -96,9 +95,9 @@ export function CastTab({ projectId, characters }: CastTabProps) {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-2xl font-bold">Assign Voices</h2>
-                    <p className="text-sm text-muted-foreground mt-1">
-                        Choose a unique voice for each character in your audiobook
+                    <h2 className="text-headline text-foreground">Assign Voices</h2>
+                    <p className="text-body text-muted-foreground mt-1">
+                        Choose a voice for each character in your audiobook
                     </p>
                 </div>
                 {allCharacters.length > 0 && (
@@ -109,16 +108,14 @@ export function CastTab({ projectId, characters }: CastTabProps) {
             </div>
 
             {otherCharacters.length === 0 && !narratorChar ? (
-                <div className="card-premium-lg">
+                <div className="surface-elevated">
                     <EmptyState
-                        icon={<User className="h-10 w-10 text-muted-foreground" />}
+                        icon={<User className="h-12 w-12 text-muted-foreground" />}
                         title="No characters detected yet"
-                        description="Run analysis on your manuscript in the Manuscript tab to automatically detect all characters and their dialogue."
+                        description="Review your manuscript in the Manuscript tab to automatically detect all characters and their dialogue."
                         primaryAction={{
                             label: "Go to Manuscript Tab",
-                            onClick: () => {
-                                // This will be handled by parent component
-                            }
+                            onClick: () => {}
                         }}
                         secondaryAction={{
                             label: "Browse Voices",
@@ -130,18 +127,18 @@ export function CastTab({ projectId, characters }: CastTabProps) {
             ) : (
                 <BentoGrid columns={2}>
                     {allCharacters.map((character) => (
-                        <BentoCard key={character.id} size="md" className={character.isNarrator ? "ring-2 ring-primary/50" : ""}>
+                        <BentoCard key={character.id} size="md" className={character.isNarrator ? "ring-2 ring-primary/30" : ""}>
                             <div className="space-y-4">
                                 {/* Header */}
                                 <div className="flex items-start justify-between">
                                     <div className="flex-1">
                                         <div className="flex items-center gap-2 mb-2">
                                             {character.isNarrator && (
-                                                <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center">
+                                                <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center">
                                                     <User className="h-4 w-4 text-primary" />
                                                 </div>
                                             )}
-                                            <h3 className="font-semibold text-lg">{character.name}</h3>
+                                            <h3 className="text-title text-foreground">{character.name}</h3>
                                             {character.isNarrator && (
                                                 <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">
                                                     Default
@@ -179,7 +176,7 @@ export function CastTab({ projectId, characters }: CastTabProps) {
                                         }
                                         disabled={isPending}
                                     >
-                                        <SelectTrigger className="bg-background">
+                                        <SelectTrigger>
                                             <SelectValue placeholder="Select a voice..." />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -194,7 +191,7 @@ export function CastTab({ projectId, characters }: CastTabProps) {
                                         </SelectContent>
                                     </Select>
                                     {selectedVoices[character.id] && (
-                                        <div className="flex items-center gap-2 text-xs text-green-400">
+                                        <div className="flex items-center gap-2 text-xs text-primary">
                                             <Sparkles className="h-3 w-3" />
                                             <span>Voice assigned</span>
                                         </div>
@@ -208,14 +205,14 @@ export function CastTab({ projectId, characters }: CastTabProps) {
 
             {/* Helper Card */}
             {allCharacters.length > 0 && (
-                <div className="card-premium-lg p-6">
+                <div className="surface p-6">
                     <div className="flex items-start gap-4">
-                        <div className="h-10 w-10 rounded-lg bg-accent/20 flex items-center justify-center shrink-0">
-                            <Mic2 className="h-5 w-5 text-accent" />
+                        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                            <Mic2 className="h-5 w-5 text-primary" />
                         </div>
                         <div className="flex-1">
-                            <h3 className="font-semibold mb-2">Need More Voices?</h3>
-                            <p className="text-sm text-muted-foreground mb-4">
+                            <h3 className="text-title text-foreground mb-2">Need More Voices?</h3>
+                            <p className="text-body text-muted-foreground mb-4">
                                 Browse our full library of 50+ voices with previews on the Voices page.
                             </p>
                             <Link href="/voices">

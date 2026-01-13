@@ -36,26 +36,26 @@ export function EmptyState({
 
   return (
     <div className={cn(
-      "flex flex-col items-center justify-center py-16 px-4 text-center",
+      "flex flex-col items-center justify-center py-12 px-6 text-center",
       className
     )}>
-      <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-muted/50 border border-border">
+      <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-xl bg-muted border border-border">
         {icon}
       </div>
       
-      <h3 className="text-xl font-semibold mb-2">{title}</h3>
-      <p className="text-muted-foreground max-w-md mb-6 leading-relaxed">
+      <h3 className="text-title text-foreground mb-2">{title}</h3>
+      <p className="text-body text-muted-foreground max-w-md mb-8">
         {description}
       </p>
 
-      <div className="flex flex-col sm:flex-row gap-3 mb-4">
+      <div className="flex flex-col sm:flex-row gap-3 mb-6">
         {primaryAction && (
           <PrimaryButton
             href={primaryAction.href}
             onClick={primaryAction.onClick}
             className="inline-flex"
           >
-            <Button className="gradient-primary border-0">
+            <Button>
               {primaryAction.label}
             </Button>
           </PrimaryButton>
@@ -79,10 +79,9 @@ export function EmptyState({
           className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           <HelpCircle className="h-4 w-4" />
-          <span>Need help? View guide</span>
+          <span>Need help?</span>
         </Link>
       )}
     </div>
   );
 }
-

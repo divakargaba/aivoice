@@ -27,19 +27,19 @@ export function PageHeader({
     <div className={cn("space-y-4", className)}>
       {/* Breadcrumbs */}
       {breadcrumbs && breadcrumbs.length > 0 && (
-        <nav className="flex items-center gap-2 text-sm text-muted-foreground">
+        <nav className="flex items-center gap-1.5 text-sm text-muted-foreground">
           <Link
             href="/dashboard"
             className="flex items-center gap-1.5 hover:text-foreground transition-colors"
           >
-            <Home className="h-4 w-4" />
-            <span className="hidden sm:inline">Dashboard</span>
+            <Home className="h-3.5 w-3.5" />
+            <span>Dashboard</span>
           </Link>
           {breadcrumbs.map((item, index) => {
             const isLast = index === breadcrumbs.length - 1;
             return (
-              <div key={index} className="flex items-center gap-2">
-                <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
+              <div key={index} className="flex items-center gap-1.5">
+                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/40" />
                 {item.href && !isLast ? (
                   <Link
                     href={item.href}
@@ -63,10 +63,10 @@ export function PageHeader({
 
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-section text-foreground">{title}</h1>
+        <div className="space-y-1.5">
+          <h1 className="text-headline text-foreground">{title}</h1>
           {subtitle && (
-            <p className="text-subhead text-muted-foreground max-w-2xl">
+            <p className="text-body text-muted-foreground max-w-2xl">
               {subtitle}
             </p>
           )}
@@ -80,4 +80,3 @@ export function PageHeader({
     </div>
   );
 }
-
