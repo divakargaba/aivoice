@@ -165,12 +165,20 @@ export async function generateAudioForChapter(
                 );
 
                 // Upload to Supabase Storage
-                const audioUrl = await uploadAudio(
-                    projectId,
-                    chapterId,
-                    block.idx,
-                    audioBuffer
-                );
+                let audioUrl: string;
+                try {
+                    audioUrl = await uploadAudio(
+                        projectId,
+                        chapterId,
+                        block.idx,
+                        audioBuffer
+                    );
+                } catch (uploadError) {
+                    console.error(`Failed to upload audio for block ${block.idx}:`, uploadError);
+                    throw new Error(
+                        `Audio generated but upload failed: ${uploadError instanceof Error ? uploadError.message : "Unknown error"}`
+                    );
+                }
 
                 // Get audio duration (approximate based on text length and average speech rate)
                 // Average speech rate: ~150 words per minute = ~2.5 words per second
