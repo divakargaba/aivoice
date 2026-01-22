@@ -1,0 +1,33 @@
+/* Theme Variables for Tailwind Integration - HSL Format */
+
+:root {
+  --background: 220 15% 6%;
+  --foreground: 220 10% 92%;
+  
+  --card: 220 12% 10%;
+  --card-foreground: 220 10% 92%;
+  
+  --popover: 220 12% 12%;
+  --popover-foreground: 220 10% 92%;
+  
+  --primary: 258 60% 58%;
+  --primary-foreground: 220 10% 98%;
+  
+  --secondary: 220 12% 14%;
+  --secondary-foreground: 220 10% 85%;
+  
+  --muted: 220 10% 18%;
+  --muted-foreground: 220 8% 55%;
+  
+  --accent: 258 50% 50%;
+  --accent-foreground: 220 10% 98%;
+  
+  --destructive: 0 65% 55%;
+  --destructive-foreground: 220 10% 98%;
+  
+  --border: 220 10% 16%;
+  --input: 220 12% 14%;
+  --ring: 258 60% 58%;
+  
+  --radius: 0.5rem;
+}

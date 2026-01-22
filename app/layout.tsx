@@ -8,8 +8,8 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "AI Voice",
-  description: "AI Voice Application",
+  title: "Audiobook Studio",
+  description: "Create multi-character audiobooks with distinct voices. Control delivery, pace, and emotion.",
 };
 
 export default function RootLayout({
@@ -32,4 +32,3 @@ export default function RootLayout({
     </ClerkProvider>
   );
 }
-

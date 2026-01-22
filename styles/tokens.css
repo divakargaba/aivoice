@@ -1,77 +1,125 @@
-/* Premium Design System - Calm, Confident, Human-Designed */
+/* Audiobook Studio Design System
+   Black-first professional theme inspired by Descript, Figma, Ableton
+   All colors in HSL format
+*/
 
 :root {
-    /* Spacing Scale (8px base) - More generous */
-    --space-1: 0.25rem;
-    /* 4px */
-    --space-2: 0.5rem;
-    /* 8px */
-    --space-3: 0.75rem;
-    /* 12px */
-    --space-4: 1rem;
-    /* 16px */
-    --space-5: 1.25rem;
-    /* 20px */
-    --space-6: 1.5rem;
-    /* 24px */
-    --space-8: 2rem;
-    /* 32px */
-    --space-10: 2.5rem;
-    /* 40px */
-    --space-12: 3rem;
-    /* 48px */
-    --space-16: 4rem;
-    /* 64px */
-    --space-20: 5rem;
-    /* 80px */
-    --space-24: 6rem;
-    /* 96px */
+    /* Core backgrounds - deep charcoal palette */
+    --background: 220 15% 6%;
+    --foreground: 220 10% 92%;
 
-    /* Border Radius - Subtle, confident */
-    --radius-sm: 0.375rem;
-    /* 6px */
-    --radius-md: 0.5rem;
-    /* 8px */
-    --radius-lg: 0.75rem;
-    /* 12px */
-    --radius-xl: 1rem;
-    /* 16px */
-    --radius-2xl: 1.5rem;
-    /* 24px */
+    /* Card/Panel surfaces - subtle elevation */
+    --card: 220 12% 10%;
+    --card-foreground: 220 10% 92%;
 
-    /* Shadows - Depth without glow */
-    --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-    --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+    /* Popover/Dropdown surfaces */
+    --popover: 220 12% 12%;
+    --popover-foreground: 220 10% 92%;
 
-    /* Typography Scale - Clear hierarchy */
-    --text-xs: 0.75rem;
-    /* 12px */
-    --text-sm: 0.875rem;
-    /* 14px */
-    --text-base: 1rem;
-    /* 16px */
-    --text-lg: 1.125rem;
-    /* 18px */
-    --text-xl: 1.25rem;
-    /* 20px */
-    --text-2xl: 1.5rem;
-    /* 24px */
-    --text-3xl: 1.875rem;
-    /* 30px */
-    --text-4xl: 2.25rem;
-    /* 36px */
-    --text-5xl: 3rem;
-    /* 48px */
-    --text-6xl: 3.75rem;
-    /* 60px */
+    /* Primary accent - subtle violet */
+    --primary: 258 60% 58%;
+    --primary-foreground: 220 10% 98%;
 
-    /* Font Weights - Clear distinction */
+    /* Secondary - muted charcoal */
+    --secondary: 220 12% 14%;
+    --secondary-foreground: 220 10% 85%;
+
+    /* Muted elements */
+    --muted: 220 10% 18%;
+    --muted-foreground: 220 8% 55%;
+
+    /* Accent - violet glow */
+    --accent: 258 50% 50%;
+    --accent-foreground: 220 10% 98%;
+
+    /* Destructive */
+    --destructive: 0 65% 55%;
+    --destructive-foreground: 220 10% 98%;
+
+    /* Borders - subtle definition */
+    --border: 220 10% 16%;
+    --input: 220 12% 14%;
+    --ring: 258 60% 58%;
+
+    --radius: 0.5rem;
+
+    /* Extended palette for studio UI */
+    --surface-1: 220 12% 8%;
+    --surface-2: 220 12% 11%;
+    --surface-3: 220 12% 14%;
+    --surface-hover: 220 12% 18%;
+    
+    /* Status colors */
+    --success: 150 60% 45%;
+    --warning: 38 90% 55%;
+    --info: 210 80% 55%;
+
+    /* Waveform and audio visualization */
+    --waveform: 258 60% 58%;
+    --waveform-bg: 220 12% 20%;
+
+    /* Sidebar */
+    --sidebar-background: 220 15% 7%;
+    --sidebar-foreground: 220 10% 85%;
+    --sidebar-primary: 258 60% 58%;
+    --sidebar-primary-foreground: 220 10% 98%;
+    --sidebar-accent: 220 12% 14%;
+    --sidebar-accent-foreground: 220 10% 92%;
+    --sidebar-border: 220 10% 14%;
+    --sidebar-ring: 258 60% 58%;
+
+    /* Spacing Scale */
+    --space-1: 0.25rem;   /* 4px */
+    --space-2: 0.5rem;    /* 8px */
+    --space-3: 0.75rem;   /* 12px */
+    --space-4: 1rem;      /* 16px */
+    --space-5: 1.25rem;   /* 20px */
+    --space-6: 1.5rem;    /* 24px */
+    --space-8: 2rem;      /* 32px */
+    --space-10: 2.5rem;   /* 40px */
+    --space-12: 3rem;     /* 48px */
+
+    /* Typography Scale */
+    --text-xs: 0.75rem;      /* 12px */
+    --text-sm: 0.875rem;     /* 14px */
+    --text-base: 1rem;       /* 16px */
+    --text-lg: 1.125rem;     /* 18px */
+    --text-xl: 1.25rem;      /* 20px */
+    --text-2xl: 1.5rem;      /* 24px */
+    --text-3xl: 1.875rem;    /* 30px */
+    --text-4xl: 2.25rem;     /* 36px */
+    --text-5xl: 3rem;        /* 48px */
+
+    /* Font Weights */
     --font-normal: 400;
     --font-medium: 500;
     --font-semibold: 600;
     --font-bold: 700;
-}
+
+    /* Transitions */
+    --transition-fast: 120ms ease;
+    --transition-base: 180ms ease;
+    --transition-slow: 240ms ease;
+  }
+
+  .dark {
+    --background: 220 15% 6%;
+    --foreground: 220 10% 92%;
+    --card: 220 12% 10%;
+    --card-foreground: 220 10% 92%;
+    --popover: 220 12% 12%;
+    --popover-foreground: 220 10% 92%;
+    --primary: 258 60% 58%;
+    --primary-foreground: 220 10% 98%;
+    --secondary: 220 12% 14%;
+    --secondary-foreground: 220 10% 85%;
+    --muted: 220 10% 18%;
+    --muted-foreground: 220 8% 55%;
+    --accent: 258 50% 50%;
+    --accent-foreground: 220 10% 98%;
+    --destructive: 0 65% 55%;
+    --destructive-foreground: 220 10% 98%;
+    --border: 220 10% 16%;
+    --input: 220 12% 14%;
+    --ring: 258 60% 58%;
+  }

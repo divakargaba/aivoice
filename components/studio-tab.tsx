@@ -4,567 +4,412 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { EmptyState } from "@/components/ui-kit/empty-state";
-import { AlertCircle, Loader2, RotateCcw, Save, Play, Pause, Download, Sparkles, Mic2 } from "lucide-react";
 import { regenerateBlockAudio, saveDirectorNotes, generateAudioForChapter } from "@/actions/audio";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useTransition, useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
+import { contentCrossfade, contentCrossfadeConfig } from "@/lib/motion";
+import { Play, Pause, Download, Loader2, Mic2, RotateCcw, Volume2, Settings } from "lucide-react";
 
 interface TextBlock {
+  id: string;
+  idx: number;
+  kind: "narration" | "dialogue";
+  text: string;
+  meta: {
+    emotion?: string;
+    director_notes?: string;
+  } | null;
+  speakerCharacter: {
+    name: string;
+  } | null;
+  audioSegment: {
     id: string;
-    idx: number;
-    kind: "narration" | "dialogue";
-    text: string;
-    meta: {
-        emotion?: string;
-        director_notes?: string;
-    } | null;
-    speakerCharacter: {
-        name: string;
-    } | null;
-    audioSegment: {
-        id: string;
-        audioUrl: string;
-    } | null;
+    audioUrl: string;
+  } | null;
 }
 
 interface Chapter {
-    id: string;
-    title: string;
-    textBlocks: TextBlock[];
+  id: string;
+  title: string;
+  textBlocks: TextBlock[];
 }
 
 interface StudioTabProps {
-    projectId: string;
-    chapter: Chapter | null;
-    projectStatus: string;
+  projectId: string;
+  chapter: Chapter | null;
+  projectStatus: string;
 }
 
 export function StudioTab({
-    projectId,
-    chapter,
-    projectStatus,
+  projectId,
+  chapter,
+  projectStatus,
 }: StudioTabProps) {
-    const router = useRouter();
-    const [isPending, startTransition] = useTransition();
-    const [selectedBlock, setSelectedBlock] = useState<TextBlock | null>(null);
-    const [regeneratingBlockId, setRegeneratingBlockId] = useState<string | null>(null);
-    const [directorNotes, setDirectorNotes] = useState("");
-    const [isSavingNotes, setIsSavingNotes] = useState(false);
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [playingBlockId, setPlayingBlockId] = useState<string | null>(null);
+  const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
+  const [directorNotes, setDirectorNotes] = useState<Record<string, string>>({});
+  const audioRefs = useRef<Record<string, HTMLAudioElement>>({});
 
-    // Playback state
-    const [isPlaying, setIsPlaying] = useState(false);
-    const [currentPlayingBlockId, setCurrentPlayingBlockId] = useState<string | null>(null);
-    const [isGeneratingAll, setIsGeneratingAll] = useState(false);
-    const audioRef = useRef<HTMLAudioElement | null>(null);
-
-    const allBlocks = chapter?.textBlocks || [];
-    const blocksWithAudio = allBlocks.filter(block => block.audioSegment);
-    const hasNoAudio = blocksWithAudio.length === 0;
-    const hasSomeAudio = blocksWithAudio.length > 0 && blocksWithAudio.length < allBlocks.length;
-
-    // Update director notes when block selection changes
-    useEffect(() => {
-        if (selectedBlock) {
-            setDirectorNotes(selectedBlock.meta?.director_notes || "");
+  useEffect(() => {
+    if (chapter) {
+      const notes: Record<string, string> = {};
+      chapter.textBlocks.forEach((block) => {
+        if (block.meta?.director_notes) {
+          notes[block.id] = block.meta.director_notes;
         }
-    }, [selectedBlock]);
+      });
+      setDirectorNotes(notes);
+    }
+  }, [chapter]);
 
-    useEffect(() => {
-        setSelectedBlock(null);
-        setDirectorNotes("");
-        setCurrentPlayingBlockId(null);
-        setIsPlaying(false);
-    }, [chapter?.id]);
-
-    // Handle sequential playback
-    const playNextBlock = () => {
-        if (!currentPlayingBlockId) return;
-
-        const currentIndex = blocksWithAudio.findIndex(b => b.id === currentPlayingBlockId);
-        if (currentIndex < blocksWithAudio.length - 1) {
-            const nextBlock = blocksWithAudio[currentIndex + 1];
-            setCurrentPlayingBlockId(nextBlock.id);
-            setSelectedBlock(nextBlock);
-        } else {
-            // Reached the end
-            setIsPlaying(false);
-            setCurrentPlayingBlockId(null);
-            toast.success("Chapter playback complete!");
-        }
-    };
-
-    const handlePlayChapter = () => {
-        if (blocksWithAudio.length === 0) {
-            toast.error("No audio generated yet. Generate audio first.");
-            return;
-        }
-
-        if (isPlaying) {
-            // Pause
-            setIsPlaying(false);
-            audioRef.current?.pause();
-        } else {
-            // Start playing from the first block with audio
-            const firstBlock = blocksWithAudio[0];
-            setIsPlaying(true);
-            setCurrentPlayingBlockId(firstBlock.id);
-            setSelectedBlock(firstBlock);
-        }
-    };
-
-    const handleDownloadChapter = async () => {
-        if (blocksWithAudio.length === 0) {
-            toast.error("No audio to download. Generate audio first.");
-            return;
-        }
-
-        const chapterId = chapter?.id;
-        if (!chapterId) return;
-
-        try {
-            const response = await fetch(`/api/chapters/${chapterId}/download`);
-            if (!response.ok) throw new Error("Download failed");
-
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            const chapterTitle = chapter?.title || "chapter";
-            a.download = `chapter-${chapterTitle.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.zip`;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-            toast.success("Chapter downloaded!");
-        } catch (error) {
-            console.error("Download failed:", error);
-            toast.error("Failed to download chapter");
-        }
-    };
-
-    const handleGenerateAllAudio = () => {
-        if (!chapter) return;
-
-        const chapterId = chapter.id;
-        const chapterTitle = chapter.title;
-
-        setIsGeneratingAll(true);
-
-        startTransition(async () => {
-            try {
-                toast.info(`Generating audio for ${chapterTitle}...`);
-
-                const result = await generateAudioForChapter(projectId, chapterId);
-
-                if (result.errorCount > 0) {
-                    toast.warning(
-                        `Generated ${result.successCount}/${result.totalBlocks} audio segments. ${result.errorCount} failed.`
-                    );
-                } else {
-                    toast.success(
-                        `Successfully generated ${result.successCount} audio segments!`
-                    );
-                }
-
-                router.refresh();
-            } catch (error) {
-                console.error("Audio generation failed:", error);
-                toast.error(
-                    error instanceof Error ? error.message : "Failed to generate audio"
-                );
-            } finally {
-                setIsGeneratingAll(false);
-            }
-        });
-    };
-
-    const handleSaveDirectorNotes = async () => {
-        if (!selectedBlock) return;
-
-        setIsSavingNotes(true);
-        try {
-            await saveDirectorNotes(projectId, selectedBlock.id, directorNotes);
-            toast.success("Director notes saved!");
-            router.refresh();
-        } catch (error) {
-            console.error("Failed to save director notes:", error);
-            toast.error(
-                error instanceof Error ? error.message : "Failed to save notes"
-            );
-        } finally {
-            setIsSavingNotes(false);
-        }
-    };
-
-    const handleRegenerateBlock = () => {
-        if (!selectedBlock) return;
-
-        setRegeneratingBlockId(selectedBlock.id);
-
-        startTransition(async () => {
-            try {
-                await regenerateBlockAudio(projectId, selectedBlock.id);
-                toast.success("Audio regenerated successfully!");
-                router.refresh();
-            } catch (error) {
-                console.error("Regeneration failed:", error);
-                toast.error(
-                    error instanceof Error ? error.message : "Failed to regenerate audio"
-                );
-            } finally {
-                setRegeneratingBlockId(null);
-            }
-        });
-    };
-
-    if (!chapter) {
-        return (
-            <div className="surface-elevated">
-                <EmptyState
-                    icon={<AlertCircle className="h-12 w-12 text-muted-foreground" />}
-                    title="No chapter selected"
-                    description="Select a chapter from the Manuscript tab to start generating audio."
-                    helpLink="/help"
-                />
-            </div>
-        );
+  const handlePlayPause = (blockId: string, audioUrl: string) => {
+    if (!audioRefs.current[blockId]) {
+      const audio = new Audio(audioUrl);
+      audioRefs.current[blockId] = audio;
+      audio.onended = () => setPlayingBlockId(null);
     }
 
-    if (projectStatus === "analyzing") {
-        return (
-            <div className="surface-elevated">
-                <div className="p-12 text-center space-y-4">
-                    <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-                        <Loader2 className="h-8 w-8 text-primary animate-spin" />
-                    </div>
-                    <h3 className="text-title text-foreground">Analysis in progress</h3>
-                    <p className="text-body text-muted-foreground max-w-md mx-auto">
-                        Your chapter is being analyzed. This usually takes a minute or two.
-                    </p>
-                </div>
-            </div>
-        );
-    }
+    const audio = audioRefs.current[blockId];
 
-    if (allBlocks.length === 0) {
-        return (
-            <div className="surface-elevated">
-                <EmptyState
-                    icon={<AlertCircle className="h-12 w-12 text-muted-foreground" />}
-                    title="No text blocks yet"
-                    description="Review your manuscript in the Manuscript tab to detect characters and dialogue."
-                    helpLink="/help"
-                />
-            </div>
-        );
+    if (playingBlockId === blockId) {
+      audio.pause();
+      setPlayingBlockId(null);
+    } else {
+      if (playingBlockId) {
+        audioRefs.current[playingBlockId]?.pause();
+      }
+      audio.play();
+      setPlayingBlockId(blockId);
     }
+  };
 
-    // Show "Generate All Audio" prompt if no audio exists
-    if (hasNoAudio) {
-        return (
-            <div className="surface-elevated">
-                <div className="p-12 text-center space-y-6">
-                    <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-                        <Sparkles className="h-10 w-10 text-primary" />
-                    </div>
-                    <div className="space-y-2">
-                        <h3 className="text-headline text-foreground">Ready to Generate Audio</h3>
-                        <p className="text-body text-muted-foreground max-w-md mx-auto">
-                            Your manuscript has been analyzed and voices are assigned.
-                            Click the button below to generate audio for all {allBlocks.length} blocks.
-                        </p>
-                    </div>
-                    <Button
-                        onClick={handleGenerateAllAudio}
-                        disabled={isGeneratingAll}
-                        size="lg"
-                        className="gap-2"
-                    >
-                        {isGeneratingAll ? (
-                            <>
-                                <Loader2 className="h-5 w-5 animate-spin" />
-                                Generating All Audio...
-                            </>
-                        ) : (
-                            <>
-                                <Sparkles className="h-5 w-5" />
-                                Generate All Audio ({allBlocks.length} blocks)
-                            </>
-                        )}
-                    </Button>
-                    <p className="text-sm text-muted-foreground">
-                        This may take a few minutes depending on chapter length
-                    </p>
-                </div>
-            </div>
+  const handleRegenerate = (blockId: string) => {
+    startTransition(async () => {
+      try {
+        await regenerateBlockAudio(projectId, blockId);
+        toast.success("Audio regenerated");
+        router.refresh();
+      } catch (error) {
+        toast.error(
+          error instanceof Error ? error.message : "Failed to regenerate audio"
         );
-    }
+      }
+    });
+  };
 
+  const handleSaveNotes = (blockId: string, notes: string) => {
+    startTransition(async () => {
+      try {
+        await saveDirectorNotes(blockId, notes);
+        toast.success("Notes saved");
+      } catch (error) {
+        toast.error(
+          error instanceof Error ? error.message : "Failed to save notes"
+        );
+      }
+    });
+  };
+
+  const handleGenerateAll = () => {
+    if (!chapter) return;
+
+    startTransition(async () => {
+      try {
+        toast.info("Generating audio for all blocks...");
+        await generateAudioForChapter(projectId, chapter.id);
+        toast.success("Audio generation started");
+        router.refresh();
+      } catch (error) {
+        toast.error(
+          error instanceof Error ? error.message : "Failed to generate audio"
+        );
+      }
+    });
+  };
+
+  if (!chapter) {
     return (
-        <div className="grid grid-cols-2 gap-4 h-[calc(100vh-300px)]">
-            {/* Left: Text Blocks List */}
-            <div className="surface flex flex-col">
-                <div className="p-4 flex-1 overflow-hidden flex flex-col">
-                    <div className="mb-4">
-                        <div className="flex items-center justify-between mb-2">
-                            <div>
-                                <h3 className="text-title text-foreground">Text Blocks</h3>
-                                <p className="text-sm text-muted-foreground">
-                                    {allBlocks.length} blocks • {blocksWithAudio.length} with audio
-                                </p>
-                            </div>
-                            <div className="flex gap-2">
-                                {hasSomeAudio && (
-                                    <Button
-                                        onClick={handleGenerateAllAudio}
-                                        disabled={isGeneratingAll}
-                                        variant="secondary"
-                                        size="sm"
-                                        className="gap-2"
-                                    >
-                                        {isGeneratingAll ? (
-                                            <>
-                                                <Loader2 className="h-4 w-4 animate-spin" />
-                                                Generating...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Sparkles className="h-4 w-4" />
-                                                Generate All
-                                            </>
-                                        )}
-                                    </Button>
-                                )}
-                                <Button
-                                    onClick={handlePlayChapter}
-                                    disabled={blocksWithAudio.length === 0}
-                                    variant={isPlaying ? "destructive" : "default"}
-                                    size="sm"
-                                    className="gap-2"
-                                >
-                                    {isPlaying ? (
-                                        <>
-                                            <Pause className="h-4 w-4" />
-                                            Pause
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Play className="h-4 w-4" />
-                                            Play Chapter
-                                        </>
-                                    )}
-                                </Button>
-                                <Button
-                                    onClick={handleDownloadChapter}
-                                    disabled={blocksWithAudio.length === 0}
-                                    variant="outline"
-                                    size="sm"
-                                    className="gap-2"
-                                >
-                                    <Download className="h-4 w-4" />
-                                    Download
-                                </Button>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="flex-1 overflow-y-auto space-y-2 pr-2 scrollbar-custom">
-                        {allBlocks.map((block) => (
-                            <div
-                                key={block.id}
-                                onClick={() => setSelectedBlock(block)}
-                                className={cn(
-                                    "p-3 rounded-lg border cursor-pointer transition-all hover:border-primary/50",
-                                    selectedBlock?.id === block.id
-                                        ? "border-primary bg-primary/5"
-                                        : "border-border bg-background",
-                                    currentPlayingBlockId === block.id &&
-                                    "ring-2 ring-green-500 bg-green-500/10"
-                                )}
-                            >
-                                <div className="flex items-start gap-2 mb-2">
-                                    <span className="text-xs font-mono text-muted-foreground min-w-[2rem]">
-                                        #{block.idx}
-                                    </span>
-                                    <div className="flex gap-1.5 flex-wrap">
-                                        <Badge
-                                            variant={
-                                                block.kind === "dialogue" ? "default" : "secondary"
-                                            }
-                                            className="text-xs"
-                                        >
-                                            {block.speakerCharacter?.name || "Narrator"}
-                                        </Badge>
-                                        {block.meta?.emotion && block.meta.emotion !== "neutral" && (
-                                            <Badge variant="outline" className="text-xs">
-                                                {block.meta.emotion}
-                                            </Badge>
-                                        )}
-                                        {block.audioSegment && (
-                                            <Badge
-                                                variant="outline"
-                                                className="text-xs bg-green-500/10 text-green-600 border-green-600/20"
-                                            >
-                                                ✓ Audio
-                                            </Badge>
-                                        )}
-                                    </div>
-                                </div>
-                                <p className="text-sm line-clamp-2">{block.text}</p>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
-
-            {/* Right: Audio Player */}
-            <div className="surface flex flex-col">
-                <div className="p-6 flex-1 flex flex-col">
-                    {!selectedBlock ? (
-                        <div className="flex-1 flex items-center justify-center text-center">
-                            <div>
-                                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted mx-auto mb-4">
-                                    <AlertCircle className="h-8 w-8 text-muted-foreground" />
-                                </div>
-                                <h3 className="font-semibold mb-1">No block selected</h3>
-                                <p className="text-sm text-muted-foreground">
-                                    Select a text block to preview or generate audio
-                                </p>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="flex flex-col h-full">
-                            <div className="mb-4">
-                                <div className="flex items-start gap-2 mb-3">
-                                    <span className="text-sm font-mono text-muted-foreground">
-                                        Block #{selectedBlock.idx}
-                                    </span>
-                                    <div className="flex gap-1.5 flex-wrap">
-                                        <Badge
-                                            variant={
-                                                selectedBlock.kind === "dialogue"
-                                                    ? "default"
-                                                    : "secondary"
-                                            }
-                                        >
-                                            {selectedBlock.speakerCharacter?.name || "Narrator"}
-                                        </Badge>
-                                        {selectedBlock.meta?.emotion &&
-                                            selectedBlock.meta.emotion !== "neutral" && (
-                                                <Badge variant="outline">
-                                                    {selectedBlock.meta.emotion}
-                                                </Badge>
-                                            )}
-                                    </div>
-                                </div>
-                                <p className="text-sm leading-relaxed">{selectedBlock.text}</p>
-                            </div>
-
-                            {/* Director Notes */}
-                            <div className="space-y-2 border-t pt-4">
-                                <Label htmlFor="director-notes" className="text-sm font-medium">
-                                    Director Notes
-                                </Label>
-                                <Textarea
-                                    id="director-notes"
-                                    placeholder="Add notes to guide the voice generation (e.g., 'speak slowly and mysteriously', 'emphasize the word danger', 'whisper this line')..."
-                                    value={directorNotes}
-                                    onChange={(e) => setDirectorNotes(e.target.value)}
-                                    className="min-h-[80px] text-sm"
-                                />
-                                <Button
-                                    onClick={handleSaveDirectorNotes}
-                                    disabled={isSavingNotes}
-                                    variant="secondary"
-                                    size="sm"
-                                    className="gap-2"
-                                >
-                                    {isSavingNotes ? (
-                                        <>
-                                            <Loader2 className="h-3 w-3 animate-spin" />
-                                            Saving...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Save className="h-3 w-3" />
-                                            Save Notes
-                                        </>
-                                    )}
-                                </Button>
-                            </div>
-
-                            <div className="mt-auto space-y-4 pt-4">
-                                {selectedBlock.audioSegment ? (
-                                    <>
-                                        <div className="p-4 bg-muted/30 rounded-lg">
-                                            <audio
-                                                ref={audioRef}
-                                                key={selectedBlock.audioSegment.audioUrl}
-                                                controls
-                                                className="w-full"
-                                                autoPlay={isPlaying}
-                                                src={selectedBlock.audioSegment.audioUrl}
-                                                onEnded={() => {
-                                                    if (isPlaying) {
-                                                        playNextBlock();
-                                                    }
-                                                }}
-                                                onPlay={() => {
-                                                    if (isPlaying) {
-                                                        setCurrentPlayingBlockId(selectedBlock.id);
-                                                    }
-                                                }}
-                                            >
-                                                Your browser does not support audio playback.
-                                            </audio>
-                                        </div>
-                                        <Button
-                                            onClick={handleRegenerateBlock}
-                                            disabled={isPending}
-                                            variant="outline"
-                                            className="w-full gap-2"
-                                        >
-                                            {regeneratingBlockId === selectedBlock.id ? (
-                                                <>
-                                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                                    Regenerating...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <RotateCcw className="h-4 w-4" />
-                                                    Regenerate Audio
-                                                </>
-                                            )}
-                                        </Button>
-                                    </>
-                                ) : (
-                                    <div className="text-center p-8 bg-muted/20 rounded-lg">
-                                        <p className="text-sm text-muted-foreground mb-3">
-                                            No audio generated yet for this block
-                                        </p>
-                                        <Button
-                                            onClick={handleRegenerateBlock}
-                                            disabled={isPending}
-                                            className="gap-2"
-                                        >
-                                            {regeneratingBlockId === selectedBlock.id ? (
-                                                <>
-                                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                                    Generating...
-                                                </>
-                                            ) : (
-                                                <>Generate Audio</>
-                                            )}
-                                        </Button>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </div>
-        </div>
+      <motion.div
+        initial={contentCrossfade.initial}
+        animate={contentCrossfade.animate}
+        exit={contentCrossfade.exit}
+        transition={contentCrossfadeConfig}
+        className="flex flex-col items-center justify-center py-24 text-center"
+      >
+        <Mic2 className="mb-4 h-12 w-12 text-[rgb(var(--text-muted))]" />
+        <h2 className="text-title mb-2">No chapter selected</h2>
+        <p className="text-body text-[rgb(var(--text-secondary))] max-w-md">
+          Select a chapter to view and generate audio.
+        </p>
+      </motion.div>
     );
+  }
+
+  if (chapter.textBlocks.length === 0) {
+    return (
+      <motion.div
+        initial={contentCrossfade.initial}
+        animate={contentCrossfade.animate}
+        exit={contentCrossfade.exit}
+        transition={contentCrossfadeConfig}
+        className="flex flex-col items-center justify-center py-24 text-center"
+      >
+        <Mic2 className="mb-4 h-12 w-12 text-[rgb(var(--text-muted))]" />
+        <h2 className="text-title mb-2">No text blocks</h2>
+        <p className="text-body text-[rgb(var(--text-secondary))] max-w-md mb-6">
+          Run analysis on your manuscript to create text blocks.
+        </p>
+      </motion.div>
+    );
+  }
+
+  const hasUnassignedBlocks = chapter.textBlocks.some(
+    (block) => block.kind === "dialogue" && !block.speakerCharacter
+  );
+  const hasUnassignedVoices = chapter.textBlocks.some(
+    (block) =>
+      block.kind === "dialogue" &&
+      block.speakerCharacter &&
+      !block.audioSegment
+  );
+  const selectedBlock = chapter.textBlocks.find((b) => b.id === selectedBlockId);
+  const hasAudio = chapter.textBlocks.some((b) => b.audioSegment);
+
+  return (
+    <motion.div
+      initial={contentCrossfade.initial}
+      animate={contentCrossfade.animate}
+      exit={contentCrossfade.exit}
+      transition={contentCrossfadeConfig}
+      className="h-full flex flex-col"
+    >
+      {/* Toolbar */}
+      <div className="border-b border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] px-6 py-3 flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <Button
+            onClick={handleGenerateAll}
+            disabled={isPending || hasUnassignedBlocks || hasUnassignedVoices}
+            size="sm"
+          >
+            {isPending ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Mic2 className="mr-2 h-4 w-4" />
+                Generate all
+              </>
+            )}
+          </Button>
+          {hasAudio && (
+            <Button variant="outline" size="sm">
+              <Download className="mr-2 h-4 w-4" />
+              Export chapter
+            </Button>
+          )}
+        </div>
+        <div className="flex items-center gap-2 text-sm text-[rgb(var(--text-secondary))]">
+          <span>{chapter.textBlocks.length} blocks</span>
+          <span>•</span>
+          <span>{chapter.textBlocks.filter((b) => b.audioSegment).length} with audio</span>
+        </div>
+      </div>
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex gap-6 overflow-hidden">
+        {/* Blocks List */}
+        <div className="flex-1 overflow-y-auto scrollbar-custom space-y-3 pr-2">
+          {chapter.textBlocks.map((block) => (
+            <motion.div
+              key={block.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              onClick={() => setSelectedBlockId(block.id)}
+              className={cn(
+                "rounded-lg border p-4 cursor-pointer transition-all",
+                selectedBlockId === block.id
+                  ? "border-[rgb(var(--accent))] bg-[rgb(var(--bg-surface))]"
+                  : "border-[rgb(var(--border-base))] bg-[rgb(var(--bg-elevated))] hover:bg-[rgb(var(--bg-surface))]"
+              )}
+            >
+              <div className="flex items-start justify-between gap-4 mb-3">
+                <div className="flex items-center gap-2 flex-1">
+                  <Badge variant="outline" className="text-xs">
+                    {block.kind}
+                  </Badge>
+                  {block.speakerCharacter && (
+                    <Badge variant="secondary" className="text-xs">
+                      {block.speakerCharacter.name}
+                    </Badge>
+                  )}
+                  {block.meta?.emotion && (
+                    <Badge variant="outline" className="text-xs">
+                      {block.meta.emotion}
+                    </Badge>
+                  )}
+                  <span className="text-xs text-[rgb(var(--text-muted))] ml-auto">
+                    #{block.idx + 1}
+                  </span>
+                </div>
+                {block.audioSegment && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handlePlayPause(block.id, block.audioSegment!.audioUrl);
+                    }}
+                  >
+                    {playingBlockId === block.id ? (
+                      <Pause className="h-4 w-4" />
+                    ) : (
+                      <Play className="h-4 w-4" />
+                    )}
+                  </Button>
+                )}
+              </div>
+              <p className="text-sm text-[rgb(var(--text-primary))] leading-relaxed mb-3">
+                {block.text}
+              </p>
+              {block.audioSegment && (
+                <div className="flex items-center gap-2 pt-3 border-t border-[rgb(var(--border-base))]">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRegenerate(block.id);
+                    }}
+                    disabled={isPending}
+                  >
+                    {isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <>
+                        <RotateCcw className="mr-2 h-4 w-4" />
+                        Regenerate
+                      </>
+                    )}
+                  </Button>
+                  <div className="flex items-center gap-1 text-xs text-[rgb(var(--text-secondary))] ml-auto">
+                    <Volume2 className="h-3 w-3" />
+                    <span>Audio ready</span>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Inspector Panel */}
+        {selectedBlock && (
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="w-80 border-l border-[rgb(var(--border-base))] bg-[rgb(var(--bg-surface))] p-6 overflow-y-auto scrollbar-custom"
+          >
+            <div className="mb-6">
+              <h3 className="text-base font-semibold text-[rgb(var(--text-primary))] mb-4">Block Inspector</h3>
+              <div className="space-y-4">
+                <div>
+                  <Label className="text-xs text-[rgb(var(--text-secondary))] mb-2 block">Type</Label>
+                  <Badge variant="outline">{selectedBlock.kind}</Badge>
+                </div>
+                {selectedBlock.speakerCharacter && (
+                  <div>
+                    <Label className="text-xs text-[rgb(var(--text-secondary))] mb-2 block">Character</Label>
+                    <Badge variant="secondary">{selectedBlock.speakerCharacter.name}</Badge>
+                  </div>
+                )}
+                {selectedBlock.meta?.emotion && (
+                  <div>
+                    <Label className="text-xs text-[rgb(var(--text-secondary))] mb-2 block">Emotion</Label>
+                    <Badge variant="outline">{selectedBlock.meta.emotion}</Badge>
+                  </div>
+                )}
+                <div>
+                  <Label className="text-xs text-[rgb(var(--text-secondary))] mb-2 block">Text</Label>
+                  <p className="text-sm text-[rgb(var(--text-primary))] leading-relaxed bg-[rgb(var(--bg-elevated))] p-3 rounded border border-[rgb(var(--border-base))]">
+                    {selectedBlock.text}
+                  </p>
+                </div>
+                <div>
+                  <Label htmlFor={`notes-${selectedBlock.id}`} className="text-xs text-[rgb(var(--text-secondary))] mb-2 block">
+                    Director Notes
+                  </Label>
+                  <Textarea
+                    id={`notes-${selectedBlock.id}`}
+                    value={directorNotes[selectedBlock.id] || ""}
+                    onChange={(e) => {
+                      setDirectorNotes((prev) => ({
+                        ...prev,
+                        [selectedBlock.id]: e.target.value,
+                      }));
+                    }}
+                    onBlur={(e) => handleSaveNotes(selectedBlock.id, e.target.value)}
+                    placeholder="Add notes for voice delivery..."
+                    className="min-h-[100px] text-sm"
+                  />
+                  <p className="text-xs text-[rgb(var(--text-muted))] mt-2">
+                    Control delivery with notes like "whisper", "speak slowly", or "emphasize danger"
+                  </p>
+                </div>
+                {selectedBlock.audioSegment && (
+                  <div>
+                    <Label className="text-xs text-[rgb(var(--text-secondary))] mb-2 block">Audio</Label>
+                    <div className="space-y-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                        onClick={() => handlePlayPause(selectedBlock.id, selectedBlock.audioSegment!.audioUrl)}
+                      >
+                        {playingBlockId === selectedBlock.id ? (
+                          <>
+                            <Pause className="mr-2 h-4 w-4" />
+                            Pause
+                          </>
+                        ) : (
+                          <>
+                            <Play className="mr-2 h-4 w-4" />
+                            Play
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                        onClick={() => handleRegenerate(selectedBlock.id)}
+                        disabled={isPending}
+                      >
+                        {isPending ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Regenerating...
+                          </>
+                        ) : (
+                          <>
+                            <RotateCcw className="mr-2 h-4 w-4" />
+                            Regenerate
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </div>
+    </motion.div>
+  );
 }
